@@ -44,7 +44,7 @@ prioritycolors = [normalcolor,";".join([normalcolor,bold]),
         ";".join([reset,redfg]),";".join([reset,redfg,bold])]
 projectcolors = {}
 
-
+##############################################################################################################
 
 def parsetask ( task ):
     """Takes a task string and splits it up to task, due, priority and project information"""
@@ -61,13 +61,16 @@ def parsetask ( task ):
 
 def parsedue ( mdue ):
     """Takes a due date match and converts it to an isoformatted date
-    
+
     In particular, if a match was found, dates like +3d or +2w are interpreted as
     'in three days' or 'in two weeks'
     """
     if mdue is None:
         return None
-    due = mdue.group(1)
+    elif isinstance ( mdue, str ):
+        due = mdue
+    else:
+        due = mdue.group(1)
     if due[0]=="+":
         # Add something to the current date
         if due[-1] == "w":
@@ -97,6 +100,8 @@ def parsedate ( date ):
     """create a datatime.date from an isoformatted date string"""
     year,month,day = date.split("-")
     return datetime.date ( int(year), int(month), int(day) )
+
+##############################################################################################################
 
 def compare_by_date ( T1, T2 ):
     """Comparison function to compare two tasks by date (for sorting)"""
@@ -194,30 +199,10 @@ class Task ( object ):
             msg = "\033[" + projectcolors.setdefault (self.project, normalcolor ) + "m" + msg + "\033[" + normalcolor + "m"
         return msg
 
-# tasks = [Task ( "Work @+3d !1" ), Task ( "Write paper @+5d !2" ), Task ( "2nd derivative operator =psignifit" ), Task("Pack records !2"), Task("check rkd problems =psignifit !1"), Task("Something overdue @2010-10-28"), Task("Say hello to Hannah @2010-10-29")]
-# 
-# tasks.sort ( compare_by_priority )
-# 
-# print "\nsorted by priority"
-# for t in tasks:
-#     print t
-# 
-# tasks.sort ( compare_by_date )
-# print "\nsorted by due date"
-# for t in tasks:
-#     print t
-# 
-# tasks.sort ( compare_by_project )
-# setcolor(tasks, "project" )
-# print "\nsorted by project"
-# for t in tasks:
-#     print t
-# 
-
 if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser ( usage="""todo.py [options] <action> <arguments>
-            
+
             Possible Actions
             ================
 
@@ -225,6 +210,7 @@ if __name__ == "__main__":
             add <task>      add a task to the todo file
             ls <sorted by>  list tasks sorted by a criterion
             done <task>     remove a task from the todo file
+            update <task>   modify a task
             """ )
 
     parser.add_option ( "-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
@@ -303,7 +289,11 @@ if __name__ == "__main__":
             If called without arguments, this will delete all outdated tasks, otherwise it will delete all tasks with a message
             that matches the given regular expression. In almost any case, you will have to quote the regular expression.
             """
+        elif args[1] == "update":
+            print """update tasks
 
+            todo.py update <regexp> <newattribute ...>
+            """
     elif args[0] == "add":
         if len(args)==1:
             parser.print_help()
@@ -364,4 +354,25 @@ if __name__ == "__main__":
         f.close()
         f = open ( donefile, "w" )
         f.write ( "\n".join ( donetasks ) )
+        f.close()
+    elif args[0] == "update":
+        tasks = []
+        f = open ( todofile )
+        lines = f.readlines()
+        f.close()
+        for l in lines:
+            tasks.append ( Task ( l ) )
+        ptrn = r"%s" % ( args[1], )
+        for t in tasks:
+            if re.search ( ptrn, t.task ):
+                for m in args[2:]:
+                    if m[0] == "@":
+                        t.due = parsedue ( m[1:] )
+                    elif m[0] == ":":
+                        t.project = m[1:]
+                    elif m[0] == "+":
+                        t.priority = int ( m[1] )
+        newtasks = "\n".join ( [ str(t) for t in tasks] )
+        f = open ( todofile, "w" )
+        f.write ( newtasks )
         f.close()
