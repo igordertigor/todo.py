@@ -10,8 +10,10 @@ whitefg   = "37"
 yellowfg  = "33"
 magentafg = "35"
 cyanfg    = "36"
-bluefg    = "1;34"
+bluefg    = "34"
 bg        = "0;40"
+
+bold      = "1"
 
 # Other configuration
 todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
@@ -21,7 +23,7 @@ normalcolor = bg + ";" + whitefg
 datecolors = [normalcolor,bg+";"+yellowfg,bg+";"+redfg]
 prioritycolors = [normalcolor,normalcolor,bg+";"+cyanfg,bg+";"+cyanfg,bg+";"+magentafg,bg+";"+magentafg,
         bg+";"+yellowfg,bg+";"+yellowfg,bg+";"+redfg,bg+";"+redfg]
-projectcolors = {"psignifit": bluefg}
+projectcolors = {}
 
 
 
@@ -212,7 +214,7 @@ if __name__ == "__main__":
     opts, args = parser.parse_args()
 
     try:
-        eval ( open(opts.cfg).read() )
+        execfile ( opts.cfg )
     except IOError:
         # Ignore configuration
         pass
