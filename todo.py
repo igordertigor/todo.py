@@ -293,6 +293,9 @@ if __name__ == "__main__":
             print """update tasks
 
             todo.py update <regexp> <newattribute ...>
+
+            Here, regexp has to be a regular expression (in most cases, you will have to quote it) and new
+            attributes can be set using the +,:,@ markers
             """
     elif args[0] == "add":
         if len(args)==1:
