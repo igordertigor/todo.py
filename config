@@ -1,0 +1,24 @@
+# This file is an example configurations for todo.py
+# To be recognized, it should be in ~/.config/todo/config
+#
+# The configuration is actually python code itself, so you can use any python code you like here
+# From the todo.py file, you may expect the following modules to be present:
+# os,sys,re,datetime
+
+# Location of the todofile
+todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
+
+# Location of the donefile (file in which completed tasks are written until the next done operation)
+donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
+
+# How many days in advance is a task rated 'critical' and colored accordingly
+criticaldays = 2
+
+# Colors
+normalcolor = bg + ";" + whitefg
+datecolors = [normalcolor,bg+";"+yellowfg,bg+";"+redfg]
+prioritycolors = [normalcolor,normalcolor,bg+";"+cyanfg,bg+";"+cyanfg,bg+";"+magentafg,bg+";"+magentafg,
+        bg+";"+yellowfg,bg+";"+yellowfg,bg+";"+redfg,bg+";"+redfg]
+
+# to mark projects with specific colors, use a dictionary
+projectcolors = {'personal': cyanfg }
