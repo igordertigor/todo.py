@@ -357,10 +357,10 @@ if __name__ == "__main__":
                 todotasks.append ( str(t) )
 
         f = open ( todofile, "w" )
-        f.write ( "\n".join ( todotasks ) )
+        f.write ( "\n".join ( todotasks )+"\n" )
         f.close()
         f = open ( donefile, "w" )
-        f.write ( "\n".join ( donetasks ) )
+        f.write ( "\n".join ( donetasks )+"\n")
         f.close()
     elif args[0] == "update":
         tasks = []
@@ -379,7 +379,7 @@ if __name__ == "__main__":
                         t.project = m[1:]
                     elif m[0] == "+":
                         t.priority = int ( m[1] )
-        newtasks = "\n".join ( [ str(t) for t in tasks] )
+        newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
         f = open ( todofile, "w" )
         f.write ( newtasks )
         f.close()
