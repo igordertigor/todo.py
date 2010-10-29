@@ -87,12 +87,16 @@ def parsepriority ( mpriority ):
     """Determine priority from a priority match"""
     if mpriority is None:
         return 0
+    if isinstance (mpriority, str ):
+        return int ( mpriority )
     return int ( mpriority.group(1) )
 
 def parseproject ( mproject ):
     """Determine project from a priority match"""
     if mproject is None:
         return None
+    elif isinstance ( mproject, str ):
+        return mproject
     else:
         return mproject.group(1)
 
