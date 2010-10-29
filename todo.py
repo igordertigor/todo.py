@@ -5,24 +5,43 @@ import datetime
 
 # Color settings
 
+blackfg   = "30"
 redfg     = "31"
-whitefg   = "37"
+greenfg   = "32"
 yellowfg  = "33"
+bluefg    = "34"
 magentafg = "35"
 cyanfg    = "36"
-bluefg    = "34"
-bg        = "0;40"
+whitefg   = "37"
+defaultfg = "39"
 
+blackbg   = "40"
+redbg     = "41"
+greenbg   = "42"
+yellowbg  = "43"
+bluebg    = "44"
+magentabg = "45"
+cyanbg    = "46"
+whitebg   = "47"
+defaultbg = "49"
+
+reset     = "0"
 bold      = "1"
+italics   = "3"
+underline = "4"
+strikethrough = "9"
 
 # Other configuration
 todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
 donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
 criticaldays = 2
-normalcolor = bg + ";" + whitefg
-datecolors = [normalcolor,bg+";"+yellowfg,bg+";"+redfg]
-prioritycolors = [normalcolor,normalcolor,bg+";"+cyanfg,bg+";"+cyanfg,bg+";"+magentafg,bg+";"+magentafg,
-        bg+";"+yellowfg,bg+";"+yellowfg,bg+";"+redfg,bg+";"+redfg]
+normalcolor = ";".join ( [reset,defaultfg,defaultbg] )
+datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join ( [reset,redfg,bold] ) ]
+prioritycolors = [normalcolor,";".join([normalcolor,bold]),
+        ";".join([reset,cyanfg]), ";".join([reset,cyanfg,bold]),
+        ";".join([reset,magentafg]),";".join([reset,magentafg,bold]),
+        ";".join([reset,yellowfg]),";".join([reset,yellowfg,bold]),
+        ";".join([reset,redfg]),";".join([reset,redfg,bold])]
 projectcolors = {}
 
 
