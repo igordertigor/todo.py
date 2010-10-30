@@ -228,7 +228,7 @@ if __name__ == "__main__":
         # Ignore configuration
         pass
 
-    if args[0] == "help":
+    if args[0][0] == "h":
         if len(args)==1:
             parser.print_help()
         elif args[1] == "add":
@@ -301,7 +301,15 @@ if __name__ == "__main__":
             Here, regexp has to be a regular expression (in most cases, you will have to quote it) and new
             attributes can be set using the +,:,@ markers
             """
-    elif args[0] == "add":
+        elif args[1] == "merge":
+            print """merge a 'todo' file with the default file
+
+            todo.py merge <second file> [regexp]
+
+            Merges the second file in the current todo file. If a regular expression is given, only those tasks form
+            the second file are used that match the regular expression.
+            """
+    elif args[0][0] == "a":
         if len(args)==1:
             parser.print_help()
         else:
@@ -309,7 +317,7 @@ if __name__ == "__main__":
             f = open ( todofile, 'a' )
             f.write ( str(newtask)+"\n" )
             f.close()
-    elif args[0] == "ls":
+    elif args[0][0] == "l":
         tasks = []
         for l in open ( todofile ):
             tasks.append ( Task ( l ) )
@@ -334,7 +342,7 @@ if __name__ == "__main__":
         for t in tasks:
             if len(projects)==0 or t.project in projects:
                 print t
-    elif args[0] == "done":
+    elif args[0][0] == "d":
         tasks = []
         f = open ( todofile )
         lines = f.readlines()
@@ -362,7 +370,7 @@ if __name__ == "__main__":
         f = open ( donefile, "w" )
         f.write ( "\n".join ( donetasks )+"\n")
         f.close()
-    elif args[0] == "update":
+    elif args[0][0] == "u":
         tasks = []
         f = open ( todofile )
         lines = f.readlines()
@@ -383,3 +391,24 @@ if __name__ == "__main__":
         f = open ( todofile, "w" )
         f.write ( newtasks )
         f.close()
+    elif args[0][0] == "m":
+        tasks = []
+        f = open ( todofile )
+        lines = f.readlines()
+        f.close()
+        for l in lines:
+            tasks.append ( l )
+        f = open ( args[1] )
+        lines = f.readlines()
+        f.close()
+        if len ( args ) > 2:
+            ptrn = r"%s" % ( args[2] , )
+        else:
+            ptrn = r""
+        for l in lines:
+            t = Task ( l )
+            if re.search ( ptrn, t.task ):
+                tasks.append ( str(t) )
+        f = open ( todofile, "w" )
+        f.write ( "".join(tasks) )
+        f.close ()
