@@ -330,14 +330,14 @@ def task_update ( opts, args ):
         tasks.append ( Task ( l ) )
     ptrn = r"%s" % ( args[1], )
     for t in tasks:
-        if re.search ( ptrn, t.task ):
+        if t.match ( args[1] ):
             for m in args[2:]:
                 if m[0] == "@":
-                    t.due = parsedue ( m[1:] )
+                    t.due = parsedue ( m )[0]
                 elif m[0] == ":":
-                    t.project = m[1:]
+                    t.project = parseproject ( m )[0]
                 elif m[0] == "+":
-                    t.priority = int ( m[1] )
+                    t.priority = parsepriority ( m )[0]
     newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
     if not opts.dry:
         f = open ( todofile, "w" )
@@ -369,7 +369,7 @@ def task_merge ( opts, args ):
         ptrn = r""
     for l in lines:
         t = Task ( l )
-        if re.search ( ptrn, t.task ):
+        if t.match ( " ".join ( args[2:] ) ):
             tasks.append ( str(t) )
     if not opts.dry:
         f = open ( todofile, "w" )
@@ -377,6 +377,10 @@ def task_merge ( opts, args ):
         f.close ()
     elif opts.verbose:
         print "".join(tasks)
+
+###############################################
+# Task object
+###############################################
 
 class Task ( object ):
     def __init__ ( self, message ):
@@ -403,6 +407,17 @@ class Task ( object ):
         elif self.coloring=="project":
             msg = "\033[" + projectcolors.setdefault (self.project, normalcolor ) + "m" + msg + "\033[" + normalcolor + "m"
         return msg
+    def match ( self, regexp, project=None ):
+        """Does this task match a regular expression?"""
+        if project is None:
+            project,regexp = parseproject ( regexp )
+        ptrn = r"%s" % ( regexp, )
+        mtask = re.search ( ptrn.strip(), self.task ) is not None
+        if project is None:
+            mproject = True
+        else:
+            mproject = re.search ( r"%s" % (project), self.project ) is not None
+        return mtask and mproject
 
 if __name__ == "__main__":
     from optparse import OptionParser
