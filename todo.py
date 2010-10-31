@@ -177,6 +177,206 @@ def setcolor ( tasks, what ):
     for t in tasks:
         t.coloring = what
 
+###############################################
+# Actions
+###############################################
+
+def task_add ( opts, args ):
+    """Add a task to the todo file.
+
+    todo.py add <task-message> [@due-date] [+priority] [:project]
+
+    A task has to contain a message. In additon, three bits of information can be associated with a task:
+       due-date      If a word in the task starts with '@', this word is taken as the due date. Due dates
+                     can be specified as absolute dates (e.g. 2011-10-03 to denote the 3rd of October in 2010
+                     or they can be specified as relative dates. Relative dates consist of a '+' sign, a number
+                     and a unit. Valid units are 'd' for days and 'w' for weeks. That is +4d means the task is
+                     due in 4 days, while +1w means the task is due in one week. By default, tasks have no due
+                     date, which means you can postpone them infinitely long.
+       priority      Tasks can be ranked by a one digit priority. To add a priority to a task, add an exclamation
+                     mark '!' followed by a number to the task description. By default, all tasks have a priority
+                     of 0.
+       project       Tasks can be marked by project labels. Project labels should consist of a single word.
+                     To mark a task as belonging to a project, simply add ':' followed by the project name
+                     to the task specification.
+
+    Examples
+    --------
+
+    todo.py add Think about version control for todo.py
+            adds a task with the message "Think about version control for todo.py" to your todo file
+
+    todo.py add Add more detailed documentation =todo.py
+            adds a task with message "Add more detailed documentation" to your todo file and mark it as belonging
+            to the project todo.py
+
+    todo.py add Read a book @+3d
+            adds a task with message "Read a book" to the todo file and mark it as "due in three days"
+
+    todo.py add Call Walter +4
+            adds a task with message "Call Walter" to the todo file and mark it as priority 4
+    """
+
+    newtask = Task ( " ".join(args[1:]) )
+    if not opts.dry:
+        f = open ( todofile, 'a' )
+        f.write ( str(newtask)+"\n" )
+        f.close()
+    elif opts.verbose:
+        print str ( newtask )+"\n"
+
+def task_ls ( opts, args ):
+    """list tasks from the todo file
+
+    todo.py ls [<sorted by>]
+
+    By default, tasks are listed in the same sequence as they are in the todo.txt file. If sorted by is assigned
+    a value, they can also be sorted by other things:
+
+    todo.py ls priority
+            tasks are sorted by priority
+    todo.py ls project
+            tasks are sorted by project
+    todo.py ls due
+            tasks are sorted by due date
+
+    If tasks are sorted, they are also colored accordingly.
+
+    In addition, a single projects can be selected by adding a project argument (':' followed by project name)
+    """
+
+    tasks = []
+    for l in open ( todofile ):
+        tasks.append ( Task ( l ) )
+    projects = []
+    sortby = ""
+    for a in args[1:]:
+        if a[0] == ":":
+            projects.append ( a[1:] )
+        else:
+            sortby = a
+    if sortby == "":
+        pass
+    elif sortby[0] == "d":
+        tasks.sort ( compare_by_date )
+        setcolor ( tasks, 'date' )
+    elif sortby[:3] == "pri":
+        tasks.sort ( compare_by_priority )
+        setcolor ( tasks, 'priority' )
+    elif sortby[:3] == "pro":
+        tasks.sort ( compare_by_project )
+        setcolor ( tasks, 'project' )
+    for t in tasks:
+        if len(projects)==0 or t.project in projects:
+            print t
+
+def task_done ( opts, args ):
+    """remove tasks from todo.txt
+
+    todo.py done [regexp]
+
+    If called without arguments, this will delete all outdated tasks, otherwise it will delete all tasks with a message
+    that matches the given regular expression. In almost any case, you will have to quote the regular expression.
+    """
+    tasks = []
+    f = open ( todofile )
+    lines = f.readlines()
+    f.close()
+    for l in lines:
+        tasks.append ( Task ( l ) )
+    todotasks = []
+    donetasks = []
+    for t in tasks:
+        if len(args)==1 and check_due(t)==2:
+            donetasks.append ( str(t) )
+        elif len(args)==2:
+            regex = r"%s" % ( args[1], )
+            m = re.search ( regex, t.task )
+            if not m is None:
+                donetasks.append ( str(t) )
+            else:
+                todotasks.append ( str(t) )
+        else:
+            todotasks.append ( str(t) )
+
+    if not opts.dry:
+        f = open ( todofile, "w" )
+        f.write ( "\n".join ( todotasks )+"\n" )
+        f.close()
+        f = open ( donefile, "w" )
+        f.write ( "\n".join ( donetasks )+"\n")
+        f.close()
+    elif opts.verbose:
+        print "TODO"
+        print "\n".join ( todotasks )+"\n"
+        print "\nDONE"
+        print "\n".join ( donetasks )+"\n"
+
+def task_update ( opts, args ):
+    """update tasks
+
+    todo.py update <regexp> <newattribute ...>
+
+    Here, regexp has to be a regular expression (in most cases, you will have to quote it) and new
+    attributes can be set using the +,:,@ markers
+    """
+
+    tasks = []
+    f = open ( todofile )
+    lines = f.readlines()
+    f.close()
+    for l in lines:
+        tasks.append ( Task ( l ) )
+    ptrn = r"%s" % ( args[1], )
+    for t in tasks:
+        if re.search ( ptrn, t.task ):
+            for m in args[2:]:
+                if m[0] == "@":
+                    t.due = parsedue ( m[1:] )
+                elif m[0] == ":":
+                    t.project = m[1:]
+                elif m[0] == "+":
+                    t.priority = int ( m[1] )
+    newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
+    if not opts.dry:
+        f = open ( todofile, "w" )
+        f.write ( newtasks )
+        f.close()
+    elif opts.verbose:
+        print newtasks
+
+def task_merge ( opts, args ):
+    """merge a 'todo' file with the default file
+
+    todo.py merge <second file> [regexp]
+
+    Merges the second file in the current todo file. If a regular expression is given, only those tasks form
+    the second file are used that match the regular expression.
+    """
+    tasks = []
+    f = open ( todofile )
+    lines = f.readlines()
+    f.close()
+    for l in lines:
+        tasks.append ( l )
+    f = open ( args[1] )
+    lines = f.readlines()
+    f.close()
+    if len ( args ) > 2:
+        ptrn = r"%s" % ( args[2] , )
+    else:
+        ptrn = r""
+    for l in lines:
+        t = Task ( l )
+        if re.search ( ptrn, t.task ):
+            tasks.append ( str(t) )
+    if not opts.dry:
+        f = open ( todofile, "w" )
+        f.write ( "".join(tasks) )
+        f.close ()
+    elif opts.verbose:
+        print "".join(tasks)
+
 class Task ( object ):
     def __init__ ( self, message ):
         """Create a task from a string"""
@@ -210,15 +410,20 @@ if __name__ == "__main__":
             Possible Actions
             ================
 
-            help <action>   more detailed help on an action
-            add <task>      add a task to the todo file
-            ls <sorted by>  list tasks sorted by a criterion
-            done <task>     remove a task from the todo file
-            update <task>   modify a task
+            help <action>                 more detailed help on an action
+            add <task>                    add a task to the todo file
+            ls <sorted by> [project]      list tasks sorted by a criterion
+            done <regexp>                 remove tasks from the todo file
+            update <task> [new setting]   modify a task
+            merge <file> [regexp]         merge contents from another file
             """ )
 
     parser.add_option ( "-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
             default=os.path.expanduser ( os.path.join ( "~",".config","todo","config" ) ) )
+    parser.add_option ( "-d", "--dry", help="'dry run', i.e. all operations are performed but no files are actually written",
+            action="store_true" )
+    parser.add_option ( "-v", "--verbose", help="print status messages on try runs",
+            action="store_true" )
 
     opts, args = parser.parse_args()
 
@@ -231,184 +436,7 @@ if __name__ == "__main__":
     if args[0][0] == "h":
         if len(args)==1:
             parser.print_help()
-        elif args[1] == "add":
-            print """Add a task to the todo file.
-
-            todo.py add <task-message> [@due-date] [+priority] [:project]
-
-            A task has to contain a message. In additon, three bits of information can be associated with a task:
-               due-date      If a word in the task starts with '@', this word is taken as the due date. Due dates
-                             can be specified as absolute dates (e.g. 2011-10-03 to denote the 3rd of October in 2010
-                             or they can be specified as relative dates. Relative dates consist of a '+' sign, a number
-                             and a unit. Valid units are 'd' for days and 'w' for weeks. That is +4d means the task is
-                             due in 4 days, while +1w means the task is due in one week. By default, tasks have no due
-                             date, which means you can postpone them infinitely long.
-               priority      Tasks can be ranked by a one digit priority. To add a priority to a task, add an exclamation
-                             mark '!' followed by a number to the task description. By default, all tasks have a priority
-                             of 0.
-               project       Tasks can be marked by project labels. Project labels should consist of a single word.
-                             To mark a task as belonging to a project, simply add ':' followed by the project name
-                             to the task specification.
-
-            Examples
-            --------
-
-            todo.py add Think about version control for todo.py
-                    adds a task with the message "Think about version control for todo.py" to your todo file
-
-            todo.py add Add more detailed documentation =todo.py
-                    adds a task with message "Add more detailed documentation" to your todo file and mark it as belonging
-                    to the project todo.py
-
-            todo.py add Read a book @+3d
-                    adds a task with message "Read a book" to the todo file and mark it as "due in three days"
-
-            todo.py add Call Walter +4
-                    adds a task with message "Call Walter" to the todo file and mark it as priority 4
-            """
-        elif args[1] == "ls":
-            print """list tasks from the todo file
-
-            todo.py ls [<sorted by>]
-
-            By default, tasks are listed in the same sequence as they are in the todo.txt file. If sorted by is assigned
-            a value, they can also be sorted by other things:
-
-            todo.py ls priority
-                    tasks are sorted by priority
-            todo.py ls project
-                    tasks are sorted by project
-            todo.py ls due
-                    tasks are sorted by due date
-
-            If tasks are sorted, they are also colored accordingly.
-
-            In addition, a single projects can be selected by adding a project argument (':' followed by project name)
-            """
-        elif args[1] == "done":
-            print """remove tasks from todo.txt
-
-            todo.py done [regexp]
-
-            If called without arguments, this will delete all outdated tasks, otherwise it will delete all tasks with a message
-            that matches the given regular expression. In almost any case, you will have to quote the regular expression.
-            """
-        elif args[1] == "update":
-            print """update tasks
-
-            todo.py update <regexp> <newattribute ...>
-
-            Here, regexp has to be a regular expression (in most cases, you will have to quote it) and new
-            attributes can be set using the +,:,@ markers
-            """
-        elif args[1] == "merge":
-            print """merge a 'todo' file with the default file
-
-            todo.py merge <second file> [regexp]
-
-            Merges the second file in the current todo file. If a regular expression is given, only those tasks form
-            the second file are used that match the regular expression.
-            """
-    elif args[0][0] == "a":
-        if len(args)==1:
-            parser.print_help()
         else:
-            newtask = Task ( " ".join(args[1:]) )
-            f = open ( todofile, 'a' )
-            f.write ( str(newtask)+"\n" )
-            f.close()
-    elif args[0][0] == "l":
-        tasks = []
-        for l in open ( todofile ):
-            tasks.append ( Task ( l ) )
-        projects = []
-        sortby = ""
-        for a in args[1:]:
-            if a[0] == ":":
-                projects.append ( a[1:] )
-            else:
-                sortby = a
-        if sortby == "":
-            pass
-        elif sortby[0] == "d":
-            tasks.sort ( compare_by_date )
-            setcolor ( tasks, 'date' )
-        elif sortby[:3] == "pri":
-            tasks.sort ( compare_by_priority )
-            setcolor ( tasks, 'priority' )
-        elif sortby[:3] == "pro":
-            tasks.sort ( compare_by_project )
-            setcolor ( tasks, 'project' )
-        for t in tasks:
-            if len(projects)==0 or t.project in projects:
-                print t
-    elif args[0][0] == "d":
-        tasks = []
-        f = open ( todofile )
-        lines = f.readlines()
-        f.close()
-        for l in lines:
-            tasks.append ( Task ( l ) )
-        todotasks = []
-        donetasks = []
-        for t in tasks:
-            if len(args)==1 and check_due(t)==2:
-                donetasks.append ( str(t) )
-            elif len(args)==2:
-                regex = r"%s" % ( args[1], )
-                m = re.search ( regex, t.task )
-                if not m is None:
-                    donetasks.append ( str(t) )
-                else:
-                    todotasks.append ( str(t) )
-            else:
-                todotasks.append ( str(t) )
-
-        f = open ( todofile, "w" )
-        f.write ( "\n".join ( todotasks )+"\n" )
-        f.close()
-        f = open ( donefile, "w" )
-        f.write ( "\n".join ( donetasks )+"\n")
-        f.close()
-    elif args[0][0] == "u":
-        tasks = []
-        f = open ( todofile )
-        lines = f.readlines()
-        f.close()
-        for l in lines:
-            tasks.append ( Task ( l ) )
-        ptrn = r"%s" % ( args[1], )
-        for t in tasks:
-            if re.search ( ptrn, t.task ):
-                for m in args[2:]:
-                    if m[0] == "@":
-                        t.due = parsedue ( m[1:] )
-                    elif m[0] == ":":
-                        t.project = m[1:]
-                    elif m[0] == "+":
-                        t.priority = int ( m[1] )
-        newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
-        f = open ( todofile, "w" )
-        f.write ( newtasks )
-        f.close()
-    elif args[0][0] == "m":
-        tasks = []
-        f = open ( todofile )
-        lines = f.readlines()
-        f.close()
-        for l in lines:
-            tasks.append ( l )
-        f = open ( args[1] )
-        lines = f.readlines()
-        f.close()
-        if len ( args ) > 2:
-            ptrn = r"%s" % ( args[2] , )
-        else:
-            ptrn = r""
-        for l in lines:
-            t = Task ( l )
-            if re.search ( ptrn, t.task ):
-                tasks.append ( str(t) )
-        f = open ( todofile, "w" )
-        f.write ( "".join(tasks) )
-        f.close ()
+            print eval ( "task_%s" % ( args[1], ) ).__doc__
+    else:
+        eval ( "task_%s" % ( args[0], ) )(opts,args)
