@@ -48,27 +48,22 @@ projectcolors = {}
 
 def parsetask ( task ):
     """Takes a task string and splits it up to task, due, priority and project information"""
-    mdue = re.search ( r" @(\S*)", task )
-    task = re.sub ( r"( @\S*)", "", task )
-    mpriority = re.search ( r" \+(\d)", task )
-    task = re.sub ( r"( \+\d)", "", task )
-    mproject = re.search ( r"\:(\S*)", task )
-    task = re.sub ( r"(\:\S*)", "", task )
-    due = parsedue ( mdue )
-    priority = parsepriority ( mpriority )
-    project = parseproject ( mproject )
+    due,task = parsedue ( task )
+    priority,task = parsepriority ( task )
+    project,task = parseproject ( task )
     return task.strip(" \n"),due,priority,project
 
-def parsedue ( mdue ):
+def parsedue ( task ):
     """Takes a due date match and converts it to an isoformatted date
 
     In particular, if a match was found, dates like +3d or +2w are interpreted as
     'in three days' or 'in two weeks'
     """
+    mdue = re.search ( r" @(\S*)", task )
+    task = re.sub ( r"( @\S*)", "", task )
+
     if mdue is None:
-        return None
-    elif isinstance ( mdue, str ):
-        due = mdue
+        return None,task
     else:
         due = mdue.group(1)
     if due[0]=="+":
@@ -81,24 +76,32 @@ def parsedue ( mdue ):
             raise ValueError, "Unrecognized date modifier '%s'" % (due[-1],)
     else:
         due = parsedate ( due ).isoformat()
-    return due
+    return due,task
 
-def parsepriority ( mpriority ):
+def parsepriority ( task ):
     """Determine priority from a priority match"""
+
+    mpriority = re.search ( r"\+(\d)", task )
+    task = re.sub ( r"(\+\d)", "", task )
+
     if mpriority is None:
-        return 0
+        return 0, task
     if isinstance (mpriority, str ):
         return int ( mpriority )
-    return int ( mpriority.group(1) )
+    return int ( mpriority.group(1) ), task
 
-def parseproject ( mproject ):
+def parseproject ( task ):
     """Determine project from a priority match"""
+
+    mproject = re.search ( r"\:(\S*)", task )
+    task = re.sub ( r"(\:\S*)", "", task )
+
     if mproject is None:
-        return None
+        return None,task
     elif isinstance ( mproject, str ):
         return mproject
     else:
-        return mproject.group(1)
+        return mproject.group(1),task
 
 def parsedate ( date ):
     """create a datatime.date from an isoformatted date string"""
@@ -290,9 +293,7 @@ def task_done ( opts, args ):
         if len(args)==1 and check_due(t)==2:
             donetasks.append ( str(t) )
         elif len(args)==2:
-            regex = r"%s" % ( args[1], )
-            m = re.search ( regex, t.task )
-            if not m is None:
+            if t.match ( " ".join(args[1:]) ):
                 donetasks.append ( str(t) )
             else:
                 todotasks.append ( str(t) )
