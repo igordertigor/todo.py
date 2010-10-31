@@ -416,7 +416,10 @@ class Task ( object ):
         if project is None:
             mproject = True
         else:
-            mproject = re.search ( r"%s" % (project), self.project ) is not None
+            if self.project is None:
+                mproject = project is None
+            else:
+                mproject = re.search ( r"%s" % (project), self.project ) is not None
         return mtask and mproject
 
 if __name__ == "__main__":

@@ -95,6 +95,7 @@ class TestTask ( ut.TestCase ):
         T = todo.Task ( "this is a test" )
         self.assertEqual ( T.match ( r"test" ), True )
         self.assertEqual ( T.match ( r"match" ), False )
+        self.assertEqual ( T.match ( "rtest :ut" ), False )
         T = todo.Task ( "this is a test :ut" )
         self.assertEqual ( T.match ( r"test", "ut" ), True )
         self.assertEqual ( T.match ( r"test" ), True )
