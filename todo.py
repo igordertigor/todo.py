@@ -59,8 +59,8 @@ def parsedue ( task ):
     In particular, if a match was found, dates like +3d or +2w are interpreted as
     'in three days' or 'in two weeks'
     """
-    mdue = re.search ( r" @(\S*)", task )
-    task = re.sub ( r"( @\S*)", "", task )
+    mdue = re.search ( r"@([\d\-+wd]+)", task )
+    task = re.sub ( r"(@[\d\-+wd]+)", "", task ).strip()
 
     if mdue is None:
         return None,task
