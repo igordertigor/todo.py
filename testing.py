@@ -77,6 +77,8 @@ class TestTask ( ut.TestCase ):
         self.assertEqual ( todo.compare_by_date ( Tn, Tn ), 0 )
     def test_check_due ( self ):
         T = todo.Task ( "test @+-1d" )
+        self.assertEqual ( todo.check_due ( T ), 3 )
+        T = todo.Task ( "test @+0d" )
         self.assertEqual ( todo.check_due ( T ), 2 )
         T = todo.Task ( "test @+1d" )
         self.assertEqual ( todo.check_due ( T ), 1 )
