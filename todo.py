@@ -34,9 +34,9 @@ strikethrough = "9"
 # Other configuration
 todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
 donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
-criticaldays = 2
+criticaldays = 4
 normalcolor = ";".join ( [reset,defaultfg,defaultbg] )
-datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join ( [reset,redfg,bold] ) ]
+datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join( [reset,redfg] ), ";".join ( [reset,redfg,bold] ) ]
 prioritycolors = [normalcolor,";".join([normalcolor,bold]),
         ";".join([reset,cyanfg]), ";".join([reset,cyanfg,bold]),
         ";".join([reset,magentafg]),";".join([reset,magentafg,bold]),
@@ -169,8 +169,10 @@ def check_due ( d ):
         return 0
     D = parsedate ( d.due )
     if D<datetime.date.today():
+        return 3
+    elif D == datetime.date.today():
         return 2
-    elif D-datetime.timedelta ( criticaldays ) < datetime.date.today():
+    elif D-datetime.timedelta ( days=criticaldays ) < datetime.date.today():
         return 1
     else:
         return 0
@@ -251,6 +253,7 @@ def task_ls ( opts, args ):
     tasks = []
     for l in open ( todofile ):
         tasks.append ( Task ( l ) )
+    tasks.sort ( compare_by_priority )
     projects = []
     sortby = ""
     for a in args[1:]:
