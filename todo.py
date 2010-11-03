@@ -4,45 +4,42 @@ import os,re,sys
 import datetime
 
 # Color settings
-
-blackfg   = "30"
-redfg     = "31"
-greenfg   = "32"
-yellowfg  = "33"
-bluefg    = "34"
-magentafg = "35"
-cyanfg    = "36"
-whitefg   = "37"
-defaultfg = "39"
-
-blackbg   = "40"
-redbg     = "41"
-greenbg   = "42"
-yellowbg  = "43"
-bluebg    = "44"
-magentabg = "45"
-cyanbg    = "46"
-whitebg   = "47"
-defaultbg = "49"
-
-reset     = "0"
-bold      = "1"
-italics   = "3"
-underline = "4"
-strikethrough = "9"
+ansicolors = {"blackfg": "30",
+        "redfg": "31",
+        "greenfg": "32",
+        "yellowfg": "33",
+        "bluefg": "34",
+        "magentafg": "35",
+        "cyanfg": "36",
+        "whitefg": "37",
+        "defaultfg": "39",
+        "blackbg": "40",
+        "redbg": "41",
+        "greenbg": "42",
+        "yellowbg": "43",
+        "bluebg": "44",
+        "magentabg": "45",
+        "cyanbg": "46",
+        "whitebg": "47",
+        "defaultbg": "49",
+        "reset": "0",
+        "bold": "1",
+        "italics": "3",
+        "underline": "4",
+        "strikethrough": "9"}
 
 # Other configuration
-todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
-donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
-criticaldays = 4
-normalcolor = ";".join ( [reset,defaultfg,defaultbg] )
-datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join( [reset,redfg] ), ";".join ( [reset,redfg,bold] ) ]
-prioritycolors = [normalcolor,";".join([normalcolor,bold]),
-        ";".join([reset,cyanfg]), ";".join([reset,cyanfg,bold]),
-        ";".join([reset,magentafg]),";".join([reset,magentafg,bold]),
-        ";".join([reset,yellowfg]),";".join([reset,yellowfg,bold]),
-        ";".join([reset,redfg]),";".join([reset,redfg,bold])]
-projectcolors = {}
+# todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
+# donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
+# criticaldays = 4
+# normalcolor = ";".join ( [reset,defaultfg,defaultbg] )
+# datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join( [reset,redfg] ), ";".join ( [reset,redfg,bold] ) ]
+# prioritycolors = [normalcolor,";".join([normalcolor,bold]),
+#         ";".join([reset,cyanfg]), ";".join([reset,cyanfg,bold]),
+#         ";".join([reset,magentafg]),";".join([reset,magentafg,bold]),
+#         ";".join([reset,yellowfg]),";".join([reset,yellowfg,bold]),
+#         ";".join([reset,redfg]),";".join([reset,redfg,bold])]
+# projectcolors = {}
 
 ##############################################################################################################
 
@@ -157,7 +154,7 @@ def compare_by_project ( T1, T2 ):
     else:
         return -1
 
-def check_due ( d ):
+def check_due ( d, criticaldays ):
     """Check due date
 
     There are three possible due dates:
@@ -186,7 +183,7 @@ def setcolor ( tasks, what ):
 # Actions
 ###############################################
 
-def task_add ( opts, args ):
+def task_add ( cfg,opts, args ):
     """Add a task to the todo file.
 
     todo.py add <task-message> [@due-date] [+priority] [:project]
@@ -221,16 +218,15 @@ def task_add ( opts, args ):
     todo.py add Call Walter +4
             adds a task with message "Call Walter" to the todo file and mark it as priority 4
     """
-
-    newtask = Task ( " ".join(args[1:]) )
+    newtask = Task ( " ".join(args[1:]), cfg )
     if not opts.dry:
-        f = open ( todofile, 'a' )
+        f = open ( cfg["todofile"], 'a' )
         f.write ( str(newtask)+"\n" )
         f.close()
     elif opts.verbose:
         print str ( newtask )+"\n"
 
-def task_ls ( opts, args ):
+def task_ls ( cfg, opts, args ):
     """list tasks from the todo file
 
     todo.py ls [<sorted by>]
@@ -251,8 +247,8 @@ def task_ls ( opts, args ):
     """
 
     tasks = []
-    for l in open ( todofile ):
-        tasks.append ( Task ( l ) )
+    for l in open ( cfg["todofile"] ):
+        tasks.append ( Task ( l, cfg ) )
     tasks.sort ( compare_by_priority )
     projects = []
     sortby = ""
@@ -276,7 +272,7 @@ def task_ls ( opts, args ):
         if len(projects)==0 or t.project in projects:
             print t
 
-def task_done ( opts, args ):
+def task_done ( cfg, opts, args ):
     """remove tasks from todo.txt
 
     todo.py done [regexp]
@@ -285,15 +281,15 @@ def task_done ( opts, args ):
     that matches the given regular expression. In almost any case, you will have to quote the regular expression.
     """
     tasks = []
-    f = open ( todofile )
+    f = open ( cfg["todofile"] )
     lines = f.readlines()
     f.close()
     for l in lines:
-        tasks.append ( Task ( l ) )
+        tasks.append ( Task ( l, cfg ) )
     todotasks = []
     donetasks = []
     for t in tasks:
-        if len(args)==1 and check_due(t)==2:
+        if len(args)==1 and check_due(t,cfg["criticaldays"])==2:
             donetasks.append ( str(t) )
         elif len(args)==2:
             if t.match ( " ".join(args[1:]) ):
@@ -304,10 +300,10 @@ def task_done ( opts, args ):
             todotasks.append ( str(t) )
 
     if not opts.dry:
-        f = open ( todofile, "w" )
+        f = open ( cfg["todofile"], "w" )
         f.write ( "\n".join ( todotasks )+"\n" )
         f.close()
-        f = open ( donefile, "w" )
+        f = open ( cfg["donefile"], "w" )
         f.write ( "\n".join ( donetasks )+"\n")
         f.close()
     elif opts.verbose:
@@ -316,7 +312,7 @@ def task_done ( opts, args ):
         print "\nDONE"
         print "\n".join ( donetasks )+"\n"
 
-def task_update ( opts, args ):
+def task_update ( cfg, opts, args ):
     """update tasks
 
     todo.py update <regexp> <newattribute ...>
@@ -326,11 +322,11 @@ def task_update ( opts, args ):
     """
 
     tasks = []
-    f = open ( todofile )
+    f = open ( cfg["todofile"] )
     lines = f.readlines()
     f.close()
     for l in lines:
-        tasks.append ( Task ( l ) )
+        tasks.append ( Task ( l, cfg ) )
     ptrn = r"%s" % ( args[1], )
     for t in tasks:
         if t.match ( args[1] ):
@@ -343,13 +339,13 @@ def task_update ( opts, args ):
                     t.priority = parsepriority ( m )[0]
     newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
     if not opts.dry:
-        f = open ( todofile, "w" )
+        f = open ( cfg["todofile"], "w" )
         f.write ( newtasks )
         f.close()
     elif opts.verbose:
         print newtasks
 
-def task_merge ( opts, args ):
+def task_merge ( cfg, opts, args ):
     """merge a 'todo' file with the default file
 
     todo.py merge <second file> [regexp]
@@ -358,7 +354,7 @@ def task_merge ( opts, args ):
     the second file are used that match the regular expression.
     """
     tasks = []
-    f = open ( todofile )
+    f = open ( cfg["todofile"] )
     lines = f.readlines()
     f.close()
     for l in lines:
@@ -371,11 +367,11 @@ def task_merge ( opts, args ):
     else:
         ptrn = r""
     for l in lines:
-        t = Task ( l )
+        t = Task ( l, cfg )
         if t.match ( " ".join ( args[2:] ) ):
             tasks.append ( str(t) )
     if not opts.dry:
-        f = open ( todofile, "w" )
+        f = open ( cfg["todofile"], "w" )
         f.write ( "".join(tasks) )
         f.close ()
     elif opts.verbose:
@@ -386,10 +382,18 @@ def task_merge ( opts, args ):
 ###############################################
 
 class Task ( object ):
-    def __init__ ( self, message ):
+    def __init__ ( self, message, cfg ):
         """Create a task from a string"""
         self.task,self.due,self.priority,self.project = parsetask ( message )
         self.coloring = ""
+        self.datecolors = [cfg["duenormal"], cfg["duesoon"], cfg["duetoday"], cfg["dueover"]]
+        self.prioritycolors = []
+        for p in xrange ( 10 ):
+            self.prioritycolors.append ( cfg["priority%d" % (p,)] )
+        self.projectcolors = {}
+        for p,c in cfg["projects"]:
+            self.projectcolors[p] = c
+        self.criticaldays = cfg["criticaldays"]
     def __str__ ( self ):
         msg = ""
         if not self.project is None:
@@ -404,11 +408,11 @@ class Task ( object ):
             msg += " "*12
         msg += "   " + self.task
         if self.coloring=="date":
-            msg = "\033[" + datecolors[check_due(self)] + "m" + msg + "\033[" + normalcolor + "m"
+            msg = "\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="priority":
-            msg = "\033[" + prioritycolors[self.priority] + "m" + msg + "\033[" + normalcolor + "m"
+            msg = "\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="project":
-            msg = "\033[" + projectcolors.setdefault (self.project, normalcolor ) + "m" + msg + "\033[" + normalcolor + "m"
+            msg = "\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         return msg
     def match ( self, regexp, project=None ):
         """Does this task match a regular expression?"""
@@ -427,6 +431,7 @@ class Task ( object ):
 
 if __name__ == "__main__":
     from optparse import OptionParser
+    from ConfigParser import SafeConfigParser
     parser = OptionParser ( usage="""todo.py [options] <action> <arguments>
 
             Possible Actions
@@ -449,11 +454,53 @@ if __name__ == "__main__":
 
     opts, args = parser.parse_args()
 
-    try:
-        execfile ( opts.cfg )
-    except IOError:
-        # Ignore configuration
-        pass
+    cfgparser = SafeConfigParser ( )
+    cfgparser.add_section ( "config" )
+    cfgparser.add_section ( "due" )
+    cfgparser.add_section ( "priority" )
+    cfgparser.add_section ( "projects" )
+    cfgparser.set ( "config", "todofile", "os.path.expanduser ( os.path.join ( '~', 'todo.txt' ) )" )
+    cfgparser.set ( "config", "donefile", "os.path.expanduser ( os.path.join ( '~', 'done.txt' ) )" )
+    cfgparser.set ( "config", "criticaldays", "2" )
+    cfgparser.set ( "due", "normal", 'reset' )
+    cfgparser.set ( "due", "soon",  'reset+";"+yellowfg' )
+    cfgparser.set ( "due", "today", 'reset+";"+redfg' )
+    cfgparser.set ( "due", "over",  'reset+";"+redfg+";"+bold' )
+    cfgparser.set ( "priority", "p0", 'reset' )
+    cfgparser.set ( "priority", "p1", 'reset+";"+bold' )
+    cfgparser.set ( "priority", "p2", 'reset+";"+cyanfg' )
+    cfgparser.set ( "priority", "p3", 'reset+";"+cyanfg+";"+bold' )
+    cfgparser.set ( "priority", "p4", 'reset+";"+magentafg' )
+    cfgparser.set ( "priority", "p5", 'reset+";"+magentafg+";"+bold' )
+    cfgparser.set ( "priority", "p6", 'reset+";"+yellowfg' )
+    cfgparser.set ( "priority", "p7", 'reset+";"+yellowfg+";"+bold' )
+    cfgparser.set ( "priority", "p8", 'reset+";"+redfg' )
+    cfgparser.set ( "priority", "p9", 'reset+";"+redfg+";"+bold' )
+
+    cfgparser.read ( opts.cfg )
+
+    config = {
+            "todofile":  eval ( cfgparser.get ( "config", "todofile" ) ),
+            "donefile":  eval ( cfgparser.get ( "config", "donefile" ) ),
+            "criticaldays": cfgparser.getint ( "config", "criticaldays"),
+            "duenormal": eval ( cfgparser.get ( "due", "normal" ), ansicolors ),
+            "duesoon":   eval ( cfgparser.get ( "due", "soon" ),   ansicolors ),
+            "duetoday":  eval ( cfgparser.get ( "due", "today" ),  ansicolors ),
+            "dueover":   eval ( cfgparser.get ( "due", "over" ),   ansicolors ),
+            "priority0": eval ( cfgparser.get ( "priority", "p0" ), ansicolors ),
+            "priority1": eval ( cfgparser.get ( "priority", "p1" ), ansicolors ),
+            "priority2": eval ( cfgparser.get ( "priority", "p2" ), ansicolors ),
+            "priority3": eval ( cfgparser.get ( "priority", "p3" ), ansicolors ),
+            "priority4": eval ( cfgparser.get ( "priority", "p4" ), ansicolors ),
+            "priority5": eval ( cfgparser.get ( "priority", "p5" ), ansicolors ),
+            "priority6": eval ( cfgparser.get ( "priority", "p6" ), ansicolors ),
+            "priority7": eval ( cfgparser.get ( "priority", "p7" ), ansicolors ),
+            "priority8": eval ( cfgparser.get ( "priority", "p8" ), ansicolors ),
+            "priority9": eval ( cfgparser.get ( "priority", "p9" ), ansicolors ),
+            "projects": []
+            }
+    for o in cfgparser.options ( "projects" ):
+        config["projects"].append ( ( o, eval ( cfgparser.get ( "projects", o ), ansicolors ) ) )
 
     if args[0][0] == "h":
         if len(args)==1:
@@ -461,4 +508,4 @@ if __name__ == "__main__":
         else:
             print eval ( "task_%s" % ( args[1], ) ).__doc__
     else:
-        eval ( "task_%s" % ( args[0], ) )(opts,args)
+        eval ( "task_%s" % ( args[0], ) )(config,opts,args)

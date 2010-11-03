@@ -5,6 +5,7 @@
 # From the todo.py file, you may expect the following modules to be present:
 # os,sys,re,datetime
 
+[config]
 # Location of the todofile
 todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
 
@@ -14,11 +15,24 @@ donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
 # How many days in advance is a task rated 'critical' and colored accordingly
 criticaldays = 2
 
-# Colors
-normalcolor = bg + ";" + whitefg
-datecolors = [normalcolor,bg+";"+yellowfg,bg+";"+redfg]
-prioritycolors = [normalcolor,normalcolor,bg+";"+cyanfg,bg+";"+cyanfg,bg+";"+magentafg,bg+";"+magentafg,
-        bg+";"+yellowfg,bg+";"+yellowfg,bg+";"+redfg,bg+";"+redfg]
+[due]
+normal:   reset+";"+whitefg
+soon:     reset+";"+yellowfg
+today:    reset+";"+redfg
+over:     reset+";"+bold+";"+redfg
+
+[priority]
+p0 = reset+";"+whitefg
+p1 = reset+";"+whitefg+";"+bold
+p2 = reset+";"+cyanfg
+p3 = reset+";"+cyanfg+";"+bold
+p4 = reset+";"+magentafg
+p5 = reset+";"+magentafg+";"+bold
+p6 = reset+";"+yellowfg
+p7 = reset+";"+yellowfg+";"+bold
+p8 = reset+";"+redfg
+p9 = reset+";"+redfg+";"+bold
 
 # to mark projects with specific colors, use a dictionary
-projectcolors = {'personal': cyanfg }
+[projects]
+personal = cyanfg
