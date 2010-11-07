@@ -1,7 +1,23 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os,re,sys
 import datetime
+import gammu
+
+helptext = """todo.py [options] <action> <arguments>
+
+            Possible Actions
+            ================
+
+            help <action>                 more detailed help on an action
+            add <task>                    add a task to the todo file
+            ls <sorted by> [project]      list tasks sorted by a criterion
+            done <regexp>                 remove tasks from the todo file
+            update <task> [new setting]   modify a task
+            merge <file> [regexp]         merge contents from another file
+            sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist
+"""
 
 # Color settings
 ansicolors = {"blackfg": "30",
@@ -228,7 +244,8 @@ class CellPhone ( object ):
 ###############################################
 
 def task_add ( cfg,opts, args ):
-    """Add a task to the todo file.
+    """
+    Add a task to the todo file.
 
     todo.py add <task-message> [@due-date] [+priority] [:project]
 
@@ -271,7 +288,8 @@ def task_add ( cfg,opts, args ):
         print str ( newtask )+"\n"
 
 def task_ls ( cfg, opts, args ):
-    """list tasks from the todo file
+    """
+    list tasks from the todo file
 
     todo.py ls [<sorted by>]
 
@@ -317,7 +335,8 @@ def task_ls ( cfg, opts, args ):
             print t
 
 def task_done ( cfg, opts, args ):
-    """remove tasks from todo.txt
+    """
+    remove tasks from todo.txt
 
     todo.py done [regexp]
 
@@ -357,7 +376,8 @@ def task_done ( cfg, opts, args ):
         print "\n".join ( donetasks )+"\n"
 
 def task_update ( cfg, opts, args ):
-    """update tasks
+    """
+    update tasks
 
     todo.py update <regexp> <newattribute ...>
 
@@ -390,7 +410,8 @@ def task_update ( cfg, opts, args ):
         print newtasks
 
 def task_merge ( cfg, opts, args ):
-    """merge a 'todo' file with the default file
+    """
+    merge a 'todo' file with the default file
 
     todo.py merge <second file> [regexp]
 
@@ -516,18 +537,7 @@ class Task ( object ):
 if __name__ == "__main__":
     from optparse import OptionParser
     from ConfigParser import SafeConfigParser
-    parser = OptionParser ( usage="""todo.py [options] <action> <arguments>
-
-            Possible Actions
-            ================
-
-            help <action>                 more detailed help on an action
-            add <task>                    add a task to the todo file
-            ls <sorted by> [project]      list tasks sorted by a criterion
-            done <regexp>                 remove tasks from the todo file
-            update <task> [new setting]   modify a task
-            merge <file> [regexp]         merge contents from another file
-            """ )
+    parser = OptionParser ( usage=helptext )
 
     parser.add_option ( "-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
             default=os.path.expanduser ( os.path.join ( "~",".config","todo","config" ) ) )
