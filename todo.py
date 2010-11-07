@@ -35,7 +35,7 @@ def parsetask ( task ):
     due,task = parsedue ( task )
     priority,task = parsepriority ( task )
     project,task = parseproject ( task )
-    return task.strip(" \n"),due,priority,project
+    return unicode ( task.strip(" \n") ),due,priority,project
 
 def parsedue ( task ):
     """Takes a due date match and converts it to an isoformatted date
@@ -382,25 +382,25 @@ class Task ( object ):
             self.projectcolors[p] = c
         self.criticaldays = cfg["criticaldays"]
     def __str__ ( self ):
-        msg = ""
+        msg = u""
         if not self.project is None:
-            msg += " :%s" % (self.project,)
+            msg += u" :%s" % (self.project,)
         if len(msg) < 17:
-            msg += " " * ( 17-len(msg) )
+            msg += u" " * ( 17-len(msg) )
         if not self.priority is None:
-            msg += " +%d" % (self.priority,)
+            msg += u" +%d" % (self.priority,)
         if not self.due is None:
-            msg += " @%s" % (self.due,)
+            msg += u" @%s" % (self.due,)
         else:
-            msg += " "*12
-        msg += "   " + self.task
+            msg += u" "*12
+        msg += u"   " + self.task
         if self.coloring=="date":
-            msg = "\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+            msg = u"\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="priority":
-            msg = "\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+            msg = u"\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="project":
-            msg = "\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
-        return msg
+            msg = u"\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        return msg.encode("utf-8")
     def match ( self, regexp, project=None ):
         """Does this task match a regular expression?"""
         if project is None:
