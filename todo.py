@@ -28,19 +28,6 @@ ansicolors = {"blackfg": "30",
         "underline": "4",
         "strikethrough": "9"}
 
-# Other configuration
-# todofile = os.path.expanduser ( os.path.join ( "~", "todo.txt" ) )
-# donefile = os.path.expanduser ( os.path.join ( "~", "done.txt" ) )
-# criticaldays = 4
-# normalcolor = ";".join ( [reset,defaultfg,defaultbg] )
-# datecolors = [ normalcolor,";".join ( [reset,yellowfg] ), ";".join( [reset,redfg] ), ";".join ( [reset,redfg,bold] ) ]
-# prioritycolors = [normalcolor,";".join([normalcolor,bold]),
-#         ";".join([reset,cyanfg]), ";".join([reset,cyanfg,bold]),
-#         ";".join([reset,magentafg]),";".join([reset,magentafg,bold]),
-#         ";".join([reset,yellowfg]),";".join([reset,yellowfg,bold]),
-#         ";".join([reset,redfg]),";".join([reset,redfg,bold])]
-# projectcolors = {}
-
 ##############################################################################################################
 
 def parsetask ( task ):
