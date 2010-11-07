@@ -1,0 +1,12 @@
+todo.py is a simple python script that allows you to manage text-file todo lists
+
+todo.py supportes the following features:
+
+    * Add tasks
+    * remove tasks by regular expression
+    * print tasks sorted by different properties
+    * synchronize tasks with your cell phone using gammu
+
+See license file for license information.
+
+(c) 2010 by Ingo Fründ

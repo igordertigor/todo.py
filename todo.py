@@ -1,11 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+licensetext = u"""
+     Managing todo text files from the command line
+     Copyright (C) 2010  Ingo Fründ (ingo.fruend@googlemail.com)
+
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+"""
 
 import os,re,sys
 import datetime
 import gammu
 
-helptext = """todo.py [options] <action> <arguments>
+helptext = u"""
+
+    todo.py [options] <action> <arguments>
 
             Possible Actions
             ================
@@ -17,6 +37,11 @@ helptext = """todo.py [options] <action> <arguments>
             update <task> [new setting]   modify a task
             merge <file> [regexp]         merge contents from another file
             sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist
+"""
+descriptiontext = u"""todo.py version 0.1, Copyright (C) 2010 Ingo Fründ
+todo.py comes with ABSOLUTELY NO WARRANTY; for details type `todo.py help'.
+This is free software, and you are welcome to redistribute it
+under certain conditions; type `todo.py --license' for details.
 """
 
 # Color settings
@@ -537,7 +562,7 @@ class Task ( object ):
 if __name__ == "__main__":
     from optparse import OptionParser
     from ConfigParser import SafeConfigParser
-    parser = OptionParser ( usage=helptext )
+    parser = OptionParser ( usage=helptext, description=descriptiontext )
 
     parser.add_option ( "-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
             default=os.path.expanduser ( os.path.join ( "~",".config","todo","config" ) ) )
@@ -545,8 +570,13 @@ if __name__ == "__main__":
             action="store_true" )
     parser.add_option ( "-v", "--verbose", help="print status messages on try runs",
             action="store_true" )
+    parser.add_option ( "-l", "--license", help="show license information and exit", action="store_true" )
 
     opts, args = parser.parse_args()
+
+    if opts.license:
+        print licensetext
+        sys.exit ()
 
     cfgparser = SafeConfigParser ( )
     cfgparser.add_section ( "config" )
