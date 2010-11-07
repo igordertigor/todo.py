@@ -76,7 +76,7 @@ def parsetask ( task ):
     due,task = parsedue ( task )
     priority,task = parsepriority ( task )
     project,task = parseproject ( task )
-    return unicode ( task.strip(" \n") ),due,priority,project
+    return unicode ( task.strip(" \n"), encoding="utf-8" ),due,priority,project
 
 def parsedue ( task ):
     """Takes a due date match and converts it to an isoformatted date
