@@ -248,7 +248,11 @@ class CellPhone ( object ):
         elif todo["Priority"] == "High":
             priority = 3
 
-        return "%s @%s +%d" % ( taskmsg,duedate.isoformat().split("T")[0],priority )
+        taskstr = u"%s +%d " % ( taskmsg, priority )
+        if duedate is not None:
+            taskstr += u"@%s" % (duedate.isoformat().split("T")[0],)
+        return taskstr
+
     def write_entry ( self, task, when ):
         if when is None:
             hour = 12
