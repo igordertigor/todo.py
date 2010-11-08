@@ -21,7 +21,13 @@ licensetext = u"""
 
 import os,re,sys
 import datetime
-import gammu
+try:
+    import gammu
+    hasgammu = True
+    synctext = "sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist"
+except ImportError:
+    hasgammu = False
+    synctext = ""
 
 helptext = u"""
 
@@ -36,8 +42,8 @@ helptext = u"""
             done <regexp>                 remove tasks from the todo file
             update <task> [new setting]   modify a task
             merge <file> [regexp]         merge contents from another file
-            sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist
-"""
+            %s
+""" % ( synctext, )
 descriptiontext = u"""todo.py version 0.1, Copyright (C) 2010 Ingo Fründ
 todo.py comes with ABSOLUTELY NO WARRANTY; for details type `todo.py help'.
 This is free software, and you are welcome to redistribute it
@@ -225,63 +231,64 @@ def remove_duplicates ( tasks ):
 ##############################################################################################################
 # Cell phone interaction
 
-class CellPhone ( object ):
-    """A cell phone object that uses gammu to sychnronize the cell phones todo list"""
-    def __init__ ( self ):
-        self.sm = gammu.StateMachine()
-        self.sm.ReadConfig()
-        self.sm.Init()
-        self.tasklist = []
-        self.__read_entries()
-    def __read_entries ( self ):
-        try:
-            todo = self.sm.GetNextToDo ( Start=True )
-        except gammu.ERR_EMPTY:
-            return
-        self.tasklist.append ( self.format_todo ( todo ) )
-        while True:
-            loc = todo["Location"]
+if hasgammu:
+    class CellPhone ( object ):
+        """A cell phone object that uses gammu to sychnronize the cell phones todo list"""
+        def __init__ ( self ):
+            self.sm = gammu.StateMachine()
+            self.sm.ReadConfig()
+            self.sm.Init()
+            self.tasklist = []
+            self.__read_entries()
+        def __read_entries ( self ):
             try:
-                todo = self.sm.GetNextToDo ( Location=loc )
+                todo = self.sm.GetNextToDo ( Start=True )
             except gammu.ERR_EMPTY:
-                break
+                return
             self.tasklist.append ( self.format_todo ( todo ) )
-    def format_todo( self, todo ):
-        duedate = None
-        taskmsg = ""
-        for e in todo["Entries"]:
-            if e["Type"] == "TEXT":
-                taskmsg = e["Value"]
-            elif e["Type"] == "ALARM_DATETIME":
-                duedate = e["Value"]
-        if todo["Priority"] == None:
-            priority = 0
-        elif todo["Priority"] == "Low":
-            priority = 1
-        elif todo["Priority"] == "Medium":
-            priority = 2
-        elif todo["Priority"] == "High":
-            priority = 3
+            while True:
+                loc = todo["Location"]
+                try:
+                    todo = self.sm.GetNextToDo ( Location=loc )
+                except gammu.ERR_EMPTY:
+                    break
+                self.tasklist.append ( self.format_todo ( todo ) )
+        def format_todo( self, todo ):
+            duedate = None
+            taskmsg = ""
+            for e in todo["Entries"]:
+                if e["Type"] == "TEXT":
+                    taskmsg = e["Value"]
+                elif e["Type"] == "ALARM_DATETIME":
+                    duedate = e["Value"]
+            if todo["Priority"] == None:
+                priority = 0
+            elif todo["Priority"] == "Low":
+                priority = 1
+            elif todo["Priority"] == "Medium":
+                priority = 2
+            elif todo["Priority"] == "High":
+                priority = 3
 
-        taskstr = u"%s +%d " % ( taskmsg, priority )
-        if duedate is not None:
-            taskstr += u"@%s" % (duedate.isoformat().split("T")[0],)
-        return taskstr
+            taskstr = u"%s +%d " % ( taskmsg, priority )
+            if duedate is not None:
+                taskstr += u"@%s" % (duedate.isoformat().split("T")[0],)
+            return taskstr
 
-    def write_entry ( self, task, when ):
-        if when is None:
-            hour = 12
-        else:
-            hour = int ( when )
-        if not task.due is None:
-            year,month,day = task.due.split("-")
-            entries = [{"Type": "ALARM_DATETIME", "Value": datetime.datetime ( day=int(day), year=int(year), month=int(month), hour=hour )}]
-        else:
-            entries = []
-        entries.append ( {"Type": "TEXT", "Value": "%s :%s" % ( task.task, task.project )} )
-        newentry = {"Priority": "Medium", "Type": "MEMO",
-                "Entries": entries }
-        self.sm.AddToDo ( newentry )
+        def write_entry ( self, task, when ):
+            if when is None:
+                hour = 12
+            else:
+                hour = int ( when )
+            if not task.due is None:
+                year,month,day = task.due.split("-")
+                entries = [{"Type": "ALARM_DATETIME", "Value": datetime.datetime ( day=int(day), year=int(year), month=int(month), hour=hour )}]
+            else:
+                entries = []
+            entries.append ( {"Type": "TEXT", "Value": "%s :%s" % ( task.task, task.project )} )
+            newentry = {"Priority": "Medium", "Type": "MEMO",
+                    "Entries": entries }
+            self.sm.AddToDo ( newentry )
 
 ###############################################
 # Actions
@@ -486,52 +493,53 @@ def task_merge ( cfg, opts, args ):
     elif opts.verbose:
         print "".join(tasks)
 
-def task_sync ( cfg, opts, args ):
-    """
-    synchronize tasks with a mobile phone
+if hasgammu:
+    def task_sync ( cfg, opts, args ):
+        """
+        synchronize tasks with a mobile phone
 
 
-    todo.py sync get
+        todo.py sync get
 
-    Reads todo entries from a cell phone using gammu. These entries are then added to to configures todo.txt
+        Reads todo entries from a cell phone using gammu. These entries are then added to to configures todo.txt
 
 
-    todo.py <regexp> [hour]
+        todo.py <regexp> [hour]
 
-    writes entries selected by a regular expression to a cell phone using gammu. If an hour is specified, the
-    cell phone's alarm is set to the particular hour. By default, the alarm will be set to noon if the task
-    has a due date. Tasks that have no due date, will not have an alarm associated.
-    """
-    c = CellPhone()
-    if args[1] == "get":
-        f = open ( cfg["todofile"] )
-        oldtasks = [ Task ( t, cfg ) for t in f.readlines() ]
-        f.close()
-        newtasks = [ Task ( t, cfg ) for t in c.tasklist ]
-
-        alltasks = remove_duplicates ( oldtasks + newtasks )
-        alltasks = "\n".join ( [ str(t) for t in alltasks ] ) + "\n"
-
-        if not opts.dry:
-            f = open ( cfg["todofile"], 'a' )
-            f.write ( alltasks )
+        writes entries selected by a regular expression to a cell phone using gammu. If an hour is specified, the
+        cell phone's alarm is set to the particular hour. By default, the alarm will be set to noon if the task
+        has a due date. Tasks that have no due date, will not have an alarm associated.
+        """
+        c = CellPhone()
+        if args[1] == "get":
+            f = open ( cfg["todofile"] )
+            oldtasks = [ Task ( t, cfg ) for t in f.readlines() ]
             f.close()
-        elif opts.verbose:
-            print str ( alltasks )
-    else:
-        # search for tasks that match the given pattern
-        f = open ( cfg["todofile"] )
-        lines = f.readlines ()
-        f.close ()
-        ptrn = r"%s" % ( args[1], )
-        if len(args) > 2:
-            when = args[2]
+            newtasks = [ Task ( t, cfg ) for t in c.tasklist ]
+
+            alltasks = remove_duplicates ( oldtasks + newtasks )
+            alltasks = "\n".join ( [ str(t) for t in alltasks ] ) + "\n"
+
+            if not opts.dry:
+                f = open ( cfg["todofile"], 'a' )
+                f.write ( alltasks )
+                f.close()
+            elif opts.verbose:
+                print str ( alltasks )
         else:
-            when = None
-        for l in lines:
-            t = Task ( l, cfg )
-            if t.match ( args[1] ):
-                c.write_entry ( t, when )
+            # search for tasks that match the given pattern
+            f = open ( cfg["todofile"] )
+            lines = f.readlines ()
+            f.close ()
+            ptrn = r"%s" % ( args[1], )
+            if len(args) > 2:
+                when = args[2]
+            else:
+                when = None
+            for l in lines:
+                t = Task ( l, cfg )
+                if t.match ( args[1] ):
+                    c.write_entry ( t, when )
 
 ###############################################
 # Task object
