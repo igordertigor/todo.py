@@ -76,7 +76,11 @@ def parsetask ( task ):
     due,task = parsedue ( task )
     priority,task = parsepriority ( task )
     project,task = parseproject ( task )
-    return unicode ( task.strip(" \n"), encoding="utf-8" ),due,priority,project
+    try:
+        task = unicode ( task.strip(" \n"), encoding="utf-8" )
+    except TypeError:
+        task = task.strip(" \n")
+    return task,due,priority,project
 
 def parsedue ( task ):
     """Takes a due date match and converts it to an isoformatted date
@@ -206,6 +210,17 @@ def setcolor ( tasks, what ):
     """Set the coloring scheme for a list of tasks"""
     for t in tasks:
         t.coloring = what
+
+def remove_duplicates ( tasks ):
+    """Remove dublicated tasks"""
+    reduced = []
+
+    while len(tasks):
+        t = tasks.pop(0)
+        if not t in reduced:
+            reduced.append ( t )
+
+    return reduced
 
 ##############################################################################################################
 # Cell phone interaction
@@ -489,13 +504,20 @@ def task_sync ( cfg, opts, args ):
     """
     c = CellPhone()
     if args[1] == "get":
-        newtasks = "\n".join ( [ str(Task ( t, cfg )) for t in c.tasklist ] ) + "\n"
+        f = open ( cfg["todofile"] )
+        oldtasks = [ Task ( t, cfg ) for t in f.readlines() ]
+        f.close()
+        newtasks = [ Task ( t, cfg ) for t in c.tasklist ]
+
+        alltasks = remove_duplicates ( oldtasks + newtasks )
+        alltasks = "\n".join ( [ str(t) for t in alltasks ] ) + "\n"
+
         if not opts.dry:
             f = open ( cfg["todofile"], 'a' )
-            f.write ( newtasks )
+            f.write ( alltasks )
             f.close()
         elif opts.verbose:
-            print str ( newtasks )
+            print str ( alltasks )
     else:
         # search for tasks that match the given pattern
         f = open ( cfg["todofile"] )
@@ -531,23 +553,27 @@ class Task ( object ):
     def __str__ ( self ):
         msg = u""
         if not self.project is None:
-            msg += u" :%s" % (self.project,)
+            msg += " :%s" % (self.project,)
         if len(msg) < 17:
-            msg += u" " * ( 17-len(msg) )
+            msg += " " * ( 17-len(msg) )
         if not self.priority is None:
-            msg += u" +%d" % (self.priority,)
+            msg += " +%d" % (self.priority,)
         if not self.due is None:
-            msg += u" @%s" % (self.due,)
+            msg += " @%s" % (self.due,)
         else:
-            msg += u" "*12
-        msg += u"   " + self.task
+            msg += " "*12
+        msg += "   " + self.task
         if self.coloring=="date":
-            msg = u"\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+            msg = "\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="priority":
-            msg = u"\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+            msg = "\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="project":
-            msg = u"\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
-        return msg.encode("utf-8")
+            msg = "\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        try:
+            msg = msg.encode( "utf-8" )
+        except UnicodeEncodeError:
+            pass
+        return msg
     def match ( self, regexp, project=None ):
         """Does this task match a regular expression?"""
         if project is None:
@@ -562,6 +588,12 @@ class Task ( object ):
             else:
                 mproject = re.search ( r"%s" % (project), self.project ) is not None
         return mtask and mproject
+    def __eq__ ( self, other ):
+        """Check wether two tasks are equal"""
+        return self.task==other.task\
+                and self.due==other.due \
+                and self.priority==other.priority \
+                and self.project==other.project
 
 if __name__ == "__main__":
     from optparse import OptionParser
