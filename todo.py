@@ -493,6 +493,25 @@ def task_merge ( cfg, opts, args ):
     elif opts.verbose:
         print "".join(tasks)
 
+def task_clean ( cfg, opts, args ):
+    """
+    clean a 'todo' file by removing duplicate entries
+
+    todo.py clean
+
+    """
+    f = open ( cfg["todofile"] )
+    lines = f.readlines()
+    f.close()
+    tasks = remove_duplicates ( [ Task ( t, cfg ) for t in lines ] )
+    tasks = "\n".join ( [ str ( t ) for t in tasks ] ) + "\n"
+    if not opts.dry:
+        f = open ( cfg["todofile"], "w" )
+        f.write ( tasks )
+        f.close()
+    elif opts.verbose:
+        print tasks
+
 if hasgammu:
     def task_sync ( cfg, opts, args ):
         """
