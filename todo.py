@@ -417,7 +417,8 @@ def task_done ( cfg, opts, args ):
         f = open ( cfg["todofile"], "w" )
         f.write ( "\n".join ( todotasks )+"\n" )
         f.close()
-        f = open ( cfg["donefile"], "w" )
+        f = open ( cfg["donefile"], "a" )
+        f.write ( "\nDone: %s\n" % datetime.date.today().isoformat() )
         f.write ( "\n".join ( donetasks )+"\n")
         f.close()
     elif opts.verbose:
