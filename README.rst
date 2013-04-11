@@ -15,7 +15,7 @@ See license file for license information.
 
 .. include:: isonum.txt
 
-Copyright |c| 2013 by Ingo Fründ
+Copyright |copy| 2013 by Ingo Fründ
 
 
 Combining todo.py with the awesome window manager
