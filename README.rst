@@ -13,7 +13,7 @@ todo.py supports the following features:
 
 See license file for license information.
 
- |c| 2013 by Ingo Fründ
+Copyright |c| 2013 by Ingo Fründ
 
 
 Combining todo.py with the awesome window manager
