@@ -371,8 +371,8 @@ def task_ls ( cfg, opts, args ):
         else:
             sortby = a
     if sortby == "":
-        pass
-    elif sortby[0] == "d":
+        sortby = cfg["ls_sortby"]
+    if sortby[0] == "d":
         tasks.sort ( compare_by_date )
         setcolor ( tasks, 'date' )
     elif sortby[:3] == "pri":
@@ -647,6 +647,7 @@ if __name__ == "__main__":
     cfgparser.add_section ( "due" )
     cfgparser.add_section ( "priority" )
     cfgparser.add_section ( "projects" )
+    cfgparser.add_section ( "task:ls" )
     cfgparser.set ( "config", "todofile", "os.path.expanduser ( os.path.join ( '~', 'todo.txt' ) )" )
     cfgparser.set ( "config", "donefile", "os.path.expanduser ( os.path.join ( '~', 'done.txt' ) )" )
     cfgparser.set ( "config", "criticaldays", "2" )
@@ -664,6 +665,7 @@ if __name__ == "__main__":
     cfgparser.set ( "priority", "p7", 'reset+";"+yellowfg+";"+bold' )
     cfgparser.set ( "priority", "p8", 'reset+";"+redfg' )
     cfgparser.set ( "priority", "p9", 'reset+";"+redfg+";"+bold' )
+    cfgparser.set ( "task:ls",  "sortby", "" )
 
     cfgparser.read ( opts.cfg )
 
@@ -685,6 +687,7 @@ if __name__ == "__main__":
             "priority7": eval ( cfgparser.get ( "priority", "p7" ), ansicolors ),
             "priority8": eval ( cfgparser.get ( "priority", "p8" ), ansicolors ),
             "priority9": eval ( cfgparser.get ( "priority", "p9" ), ansicolors ),
+            "ls_sortby":  cfgparser.get ( "task:ls", "sortby" ),
             "projects": []
             }
     for o in cfgparser.options ( "projects" ):

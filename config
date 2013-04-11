@@ -36,3 +36,7 @@ p9 = reset+";"+redfg+";"+bold
 # to mark projects with specific colors, use a dictionary
 [projects]
 personal = cyanfg
+
+# We can customize tasks
+[task:ls]
+sortby: due
