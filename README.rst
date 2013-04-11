@@ -9,7 +9,7 @@ todo.py supportes the following features:
 
 See license file for license information.
 
-(c) 2010 by Ingo Fründ
+(c) 2013 by Ingo Fründ
 
 
 Combining todo.py with the awesome window manager
@@ -22,16 +22,16 @@ Type if you use awesome with the default configuration, you can type
 
 vim ~/.config/awesome/rc.lua +/"mypromptbox\[mouse\.screen\]:run()"
 
-to jump to the coonfiguration of the "Run:" prompt. We now generate a second prompt for todo.py by adding
-the following lines:
+to jump to the configuration of the "Run:" prompt. We now generate a second prompt for todo.py by adding
+the following lines::
 
     awful.key({ modkey },            "t",
               function ()
                   awful.prompt.run({ prompt = "todo "},
                   mypromptbox[mouse.screen].widget,
-                  function (cmd) awful.util.spawn ( string.format ( "/home/ingo/bin/todo %s", cmd ) ) end,
+                  function (cmd) awful.util.spawn ( string.format ( "path/to/todo.py %s", cmd ) ) end,
                   nil,
                   nil )
               end),
 
-where you should replace '/home/ingo/bin/todo' by the path to your todo.py executable.
+where you should replace 'path/to/todo.py' by the path to your todo.py executable.
