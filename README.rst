@@ -13,7 +13,7 @@ todo.py supports the following features:
 
 See license file for license information.
 
-.. include:: isonum.txt
+.. |copy|   unicode:: U+000A9 .. COPYRIGHT SIGN
 
 Copyright |copy| 2013 by Ingo Fründ
 
