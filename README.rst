@@ -13,6 +13,8 @@ todo.py supports the following features:
 
 See license file for license information.
 
+.. include:: isonum.txt
+
 Copyright |c| 2013 by Ingo Fründ
 
 
