@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 licensetext = u"""
      Managing todo text files from the command line
-     Copyright (C) 2010  Ingo Fründ (ingo.fruend@googlemail.com)
+     Copyright (C) 2013  Ingo Fründ (ingo.fruend@googlemail.com)
 
      This program is free software; you can redistribute it and/or modify
      it under the terms of the GNU General Public License as published by
