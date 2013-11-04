@@ -382,7 +382,11 @@ def task_ls ( cfg, opts, args ):
         tasks.sort ( compare_by_project )
         setcolor ( tasks, 'project' )
     for t in tasks:
-        if len(projects)==0 or t.project in projects:
+        if len(projects)==0:
+            print t
+        elif not opts.exclude and t.project in projects:
+            print t
+        elif opts.exclude and not t.project in projects:
             print t
 
 def task_done ( cfg, opts, args ):
@@ -635,6 +639,7 @@ if __name__ == "__main__":
     parser.add_option ( "-v", "--verbose", help="print status messages on try runs",
             action="store_true" )
     parser.add_option ( "-l", "--license", help="show license information and exit", action="store_true" )
+    parser.add_option ( "-x", "--exclude", help="Interpret project specifications as exclusions", action="store_true" )
 
     opts, args = parser.parse_args()
 
