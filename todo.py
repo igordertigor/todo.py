@@ -307,8 +307,8 @@ def task_add ( cfg,opts, args ):
                      and a unit. Valid units are 'd' for days and 'w' for weeks. That is +4d means the task is
                      due in 4 days, while +1w means the task is due in one week. By default, tasks have no due
                      date, which means you can postpone them infinitely long.
-       priority      Tasks can be ranked by a one digit priority. To add a priority to a task, add an exclamation
-                     mark '!' followed by a number to the task description. By default, all tasks have a priority
+       priority      Tasks can be ranked by a one digit priority. To add a priority to a task, add a plus sign
+                     '+' followed by a number to the task description. By default, all tasks have a priority
                      of 0.
        project       Tasks can be marked by project labels. Project labels should consist of a single word.
                      To mark a task as belonging to a project, simply add ':' followed by the project name
