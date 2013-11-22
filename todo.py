@@ -129,13 +129,13 @@ def parseproject ( task ):
     """Determine project from a priority match"""
 
     mproject = re.search ( r"\:(\S*)", task )
-    task = re.sub ( r"(\:\S*)", "", task )
 
     if mproject is None:
         return None,task
     elif isinstance ( mproject, str ):
         return mproject
     else:
+        task = re.sub ( r"(\:%s)" % (mproject.group(1),), "", task )
         return mproject.group(1),task
 
 def parsedate ( date ):
