@@ -75,6 +75,8 @@ ansicolors = {"blackfg": "30",
         "underline": "4",
         "strikethrough": "9"}
 
+outputstream = sys.stdout
+
 ##############################################################################################################
 
 def parsetask ( task ):
@@ -294,7 +296,7 @@ if hasgammu:
 # Actions
 ###############################################
 
-def task_add ( cfg,opts, args ):
+def task_add ( cfg, opts, args ):
     """
     Add a task to the todo file.
 
@@ -336,7 +338,7 @@ def task_add ( cfg,opts, args ):
         f.write ( str(newtask)+"\n" )
         f.close()
     elif opts.verbose:
-        print str ( newtask )+"\n"
+        outputstream.write ( str ( newtask )+"\n" +"\n" )
 
 def task_ls ( cfg, opts, args ):
     """
@@ -383,11 +385,11 @@ def task_ls ( cfg, opts, args ):
         setcolor ( tasks, 'project' )
     for t in tasks:
         if len(projects)==0:
-            print t
+            outputstream.write (  str(t)+"\n" )
         elif not opts.exclude and t.project in projects:
-            print t
+            outputstream.write ( str(t)+"\n" )
         elif opts.exclude and not t.project in projects:
-            print t
+            outputstream.write ( str(t)+"\n" )
 
 def task_done ( cfg, opts, args ):
     """
@@ -426,10 +428,10 @@ def task_done ( cfg, opts, args ):
         f.write ( "\n".join ( donetasks )+"\n")
         f.close()
     elif opts.verbose:
-        print "TODO"
-        print "\n".join ( todotasks )+"\n"
-        print "\nDONE"
-        print "\n".join ( donetasks )+"\n"
+        outputstream.write ( "TODO"+"\n" )
+        outputstream.write ( "\n".join ( todotasks )+"\n"+"\n" )
+        outputstream.write ( "\nDONE" +"\n" )
+        outputstream.write ( "\n".join ( donetasks )+"\n" + "\n" )
 
 def task_update ( cfg, opts, args ):
     """
@@ -463,7 +465,7 @@ def task_update ( cfg, opts, args ):
         f.write ( newtasks )
         f.close()
     elif opts.verbose:
-        print newtasks
+        outputstream.write ( newtasks +"\n" )
 
 def task_merge ( cfg, opts, args ):
     """
@@ -496,7 +498,7 @@ def task_merge ( cfg, opts, args ):
         f.write ( "".join(tasks) )
         f.close ()
     elif opts.verbose:
-        print "".join(tasks)
+        outputstream.write ( "".join(tasks) +"\n" )
 
 def task_clean ( cfg, opts, args ):
     """
@@ -515,7 +517,7 @@ def task_clean ( cfg, opts, args ):
         f.write ( tasks )
         f.close()
     elif opts.verbose:
-        print tasks
+        outputstream.write ( tasks +"\n" )
 
 if hasgammu:
     def task_sync ( cfg, opts, args ):
@@ -549,7 +551,7 @@ if hasgammu:
                 f.write ( alltasks )
                 f.close()
             elif opts.verbose:
-                print str ( alltasks )
+                outputstream.write ( str ( alltasks ) +"\n" )
         else:
             # search for tasks that match the given pattern
             f = open ( cfg["todofile"] )
@@ -644,7 +646,7 @@ if __name__ == "__main__":
     opts, args = parser.parse_args()
 
     if opts.license:
-        print licensetext
+        outputstream.write ( licensetext +"\n" )
         sys.exit ()
 
     cfgparser = SafeConfigParser ( )
@@ -702,6 +704,6 @@ if __name__ == "__main__":
         if len(args)==1:
             parser.print_help()
         else:
-            print eval ( "task_%s" % ( args[1], ) ).__doc__
+            outputstream.write ( eval ( "task_%s" % ( args[1], ) ).__doc__ + "\n" )
     else:
         eval ( "task_%s" % ( args[0], ) )(config,opts,args)
