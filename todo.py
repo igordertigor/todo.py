@@ -76,6 +76,7 @@ ansicolors = {"blackfg": "30",
         "strikethrough": "9"}
 
 outputstream = sys.stdout
+asciiout     = False
 
 ##############################################################################################################
 
@@ -372,17 +373,18 @@ def task_ls ( cfg, opts, args ):
             projects.append ( a[1:] )
         else:
             sortby = a
+    print "Sortby:",sortby
     if sortby == "":
         sortby = cfg["ls_sortby"]
     if sortby[0] == "d":
         tasks.sort ( compare_by_date )
-        setcolor ( tasks, 'date' )
+        setcolor ( tasks, 'nocolor' if asciiout else 'date' )
     elif sortby[:3] == "pri":
         tasks.sort ( compare_by_priority )
-        setcolor ( tasks, 'priority' )
+        setcolor ( tasks, 'nocolor' if asciiout else 'priority' )
     elif sortby[:3] == "pro":
         tasks.sort ( compare_by_project )
-        setcolor ( tasks, 'project' )
+        setcolor ( tasks, 'nocolor' if asciiout else 'project' )
     for t in tasks:
         if len(projects)==0:
             outputstream.write (  str(t)+"\n" )
@@ -575,7 +577,7 @@ class Task ( object ):
     def __init__ ( self, message, cfg ):
         """Create a task from a string"""
         self.task,self.due,self.priority,self.project = parsetask ( message )
-        self.coloring = ""
+        self.__coloring = ""
         self.datecolors = [cfg["duenormal"], cfg["duesoon"], cfg["duetoday"], cfg["dueover"]]
         self.prioritycolors = []
         for p in xrange ( 10 ):
@@ -603,6 +605,8 @@ class Task ( object ):
             msg = "\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
         elif self.coloring=="project":
             msg = "\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        elif self.coloring=="nocolor":
+            pass
         try:
             msg = msg.encode( "utf-8" )
         except UnicodeEncodeError:
@@ -628,6 +632,13 @@ class Task ( object ):
                 and self.due==other.due \
                 and self.priority==other.priority \
                 and self.project==other.project
+
+    def setcolor ( self, c ):
+        if not self.__coloring == "nocolor":
+            self.__coloring = c
+    def getcolor ( self ):
+        return self.__coloring
+    coloring = property ( fget=getcolor, fset=setcolor )
 
 if __name__ == "__main__":
     from optparse import OptionParser
