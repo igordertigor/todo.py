@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+import os
+import re
+import sys
+import datetime
+try:
+    from phone import CellPhone
+    hasgammu = True
+    synctext = "sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist"
+except ImportError:
+    hasgammu = False
+    synctext = ""
+
 licensetext = u"""
      Managing todo text files from the command line
      Copyright (C) 2013  Ingo Fründ (ingo.fruend@googlemail.com)
@@ -19,16 +32,6 @@ licensetext = u"""
      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 """
 
-import os,re,sys
-import datetime
-try:
-    import gammu
-    hasgammu = True
-    synctext = "sync <get|regexp> [hour]      use gammu to synchronize with cell phone tasklist"
-except ImportError:
-    hasgammu = False
-    synctext = ""
-
 helptext = u"""
 
     todo.py [options] <action> <arguments>
@@ -43,7 +46,7 @@ helptext = u"""
             update <task> [new setting]   modify a task
             merge <file> [regexp]         merge contents from another file
             %s
-""" % ( synctext, )
+""" % (synctext,)
 descriptiontext = u"""todo.py version 0.1, Copyright (C) 2010 Ingo Fründ
 todo.py comes with ABSOLUTELY NO WARRANTY; for details type `todo.py help'.
 This is free software, and you are welcome to redistribute it
@@ -52,103 +55,109 @@ under certain conditions; type `todo.py --license' for details.
 
 # Color settings
 ansicolors = {"blackfg": "30",
-        "redfg": "31",
-        "greenfg": "32",
-        "yellowfg": "33",
-        "bluefg": "34",
-        "magentafg": "35",
-        "cyanfg": "36",
-        "whitefg": "37",
-        "defaultfg": "39",
-        "blackbg": "40",
-        "redbg": "41",
-        "greenbg": "42",
-        "yellowbg": "43",
-        "bluebg": "44",
-        "magentabg": "45",
-        "cyanbg": "46",
-        "whitebg": "47",
-        "defaultbg": "49",
-        "reset": "0",
-        "bold": "1",
-        "italics": "3",
-        "underline": "4",
-        "strikethrough": "9"}
+              "redfg": "31",
+              "greenfg": "32",
+              "yellowfg": "33",
+              "bluefg": "34",
+              "magentafg": "35",
+              "cyanfg": "36",
+              "whitefg": "37",
+              "defaultfg": "39",
+              "blackbg": "40",
+              "redbg": "41",
+              "greenbg": "42",
+              "yellowbg": "43",
+              "bluebg": "44",
+              "magentabg": "45",
+              "cyanbg": "46",
+              "whitebg": "47",
+              "defaultbg": "49",
+              "reset": "0",
+              "bold": "1",
+              "italics": "3",
+              "underline": "4",
+              "strikethrough": "9"}
 
 outputstream = sys.stdout
-asciiout     = False
+asciiout = False
 
 ##############################################################################################################
 
-def parsetask ( task ):
+
+def parsetask(task):
     """Takes a task string and splits it up to task, due, priority and project information"""
-    due,task = parsedue ( task )
-    priority,task = parsepriority ( task )
-    project,task = parseproject ( task )
+    due, task = parsedue(task)
+    priority, task = parsepriority(task)
+    project, task = parseproject(task)
     try:
-        task = unicode ( task.strip(" \n"), encoding="utf-8" )
+        task = unicode(task.strip(" \n"), encoding="utf-8")
     except TypeError:
         task = task.strip(" \n")
-    return task,due,priority,project
+    return task, due, priority, project
 
-def parsedue ( task ):
+
+def parsedue(task):
     """Takes a due date match and converts it to an isoformatted date
 
     In particular, if a match was found, dates like +3d or +2w are interpreted as
     'in three days' or 'in two weeks'
     """
-    mdue = re.search ( r"@([\d\-+wd]+)", task )
-    task = re.sub ( r"(@[\d\-+wd]+)", "", task ).strip()
+    mdue = re.search(r"@([\d\-+wd]+)", task)
+    task = re.sub(r"(@[\d\-+wd]+)", "", task).strip()
 
     if mdue is None:
-        return None,task
+        return None, task
     else:
         due = mdue.group(1)
-    if due[0]=="+":
+    if due[0] == "+":
         # Add something to the current date
         if due[-1] == "w":
-            due = str ( datetime.date.today() + datetime.timedelta ( days=7*int(due[1:-1]) ) )
+            due = str(datetime.date.today() + datetime.timedelta(days=7*int(due[1:-1])))
         elif due[-1] == "d":
-            due = str ( datetime.date.today() + datetime.timedelta ( days=int(due[1:-1]) ) )
+            due = str(datetime.date.today() + datetime.timedelta(days=int(due[1:-1])))
         else:
-            raise ValueError, "Unrecognized date modifier '%s'" % (due[-1],)
+            raise ValueError("Unrecognized date modifier '%s'" % (due[-1],))
     else:
-        due = parsedate ( due ).isoformat()
-    return due,task
+        due = parsedate(due).isoformat()
+    return due, task
 
-def parsepriority ( task ):
+
+def parsepriority(task):
     """Determine priority from a priority match"""
 
-    mpriority = re.search ( r"\+(\d)", task )
-    task = re.sub ( r"(\+\d)", "", task )
+    mpriority = re.search(r"\+(\d)", task)
+    task = re.sub(r"(\+\d)", "", task)
 
     if mpriority is None:
         return 0, task
-    if isinstance (mpriority, str ):
-        return int ( mpriority )
-    return int ( mpriority.group(1) ), task
+    if isinstance(mpriority, str):
+        return int(mpriority)
+    return int(mpriority.group(1)), task
 
-def parseproject ( task ):
+
+def parseproject(task):
     """Determine project from a priority match"""
 
-    mproject = re.search ( r"\:(\S*)", task )
+    mproject = re.search(r"\:(\S*)", task)
 
     if mproject is None:
-        return None,task
-    elif isinstance ( mproject, str ):
+        return None, task
+    elif isinstance(mproject, str):
         return mproject
     else:
-        task = re.sub ( r"(\:%s)" % (mproject.group(1),), "", task )
-        return mproject.group(1),task
+        task = re.sub(r"(\:%s)" % (mproject.group(1),), "", task)
+        return mproject.group(1), task
 
-def parsedate ( date ):
+
+def parsedate(date):
     """create a datatime.date from an isoformatted date string"""
-    year,month,day = date.split("-")
-    return datetime.date ( int(year), int(month), int(day) )
+    year, month, day = date.split("-")
+    return datetime.date(int(year), int(month), int(day))
 
 ##############################################################################################################
 
-def compare_by_date ( T1, T2 ):
+
+def compare_by_date(T1, T2):
     """Comparison function to compare two tasks by date (for sorting)"""
     # If one of the due dates is None, the due date is taken to be larger than everything else
     if T1.due is None:
@@ -159,25 +168,27 @@ def compare_by_date ( T1, T2 ):
     elif T2.due is None:
         return -1
     # Otherwise, we have to compare the dates
-    D1 = parsedate ( T1.due )
-    D2 = parsedate ( T2.due )
-    if D1>D2:
+    D1 = parsedate(T1.due)
+    D2 = parsedate(T2.due)
+    if D1 > D2:
         return 1
-    elif D1==D2:
+    elif D1 == D2:
         return 0
     else:
         return -1
 
-def compare_by_priority ( T1, T2 ):
+
+def compare_by_priority(T1, T2):
     """Comparison function to compare two tasks by priority (for sorting)"""
-    if T1.priority>T2.priority:
+    if T1.priority > T2.priority:
         return -1
-    elif T1.priority==T2.priority:
+    elif T1.priority == T2.priority:
         return 0
     else:
         return 1
 
-def compare_by_project ( T1, T2 ):
+
+def compare_by_project(T1, T2):
     """Comparison function to compare two tasks by project"""
     # If one of the projects is none, the task comes last
     if T1.project is None:
@@ -188,14 +199,15 @@ def compare_by_project ( T1, T2 ):
     if T2.project is None:
         return -1
     # Otherwise, sort projects alphabetically
-    if T1.project>T2.project:
+    if T1.project > T2.project:
         return 1
-    elif T1.project==T2.project:
+    elif T1.project == T2.project:
         return 0
     else:
         return -1
 
-def check_due ( d, criticaldays ):
+
+def check_due(d, criticaldays):
     """Check due date
 
     There are three possible due dates:
@@ -205,99 +217,40 @@ def check_due ( d, criticaldays ):
     """
     if d.due is None:
         return 0
-    D = parsedate ( d.due )
-    if D<datetime.date.today():
+    D = parsedate(d.due)
+    if D < datetime.date.today():
         return 3
     elif D == datetime.date.today():
         return 2
-    elif D-datetime.timedelta ( days=criticaldays ) < datetime.date.today():
+    elif D - datetime.timedelta(days=criticaldays) < datetime.date.today():
         return 1
     else:
         return 0
 
-def setcolor ( tasks, what ):
+
+def setcolor(tasks, what):
     """Set the coloring scheme for a list of tasks"""
     for t in tasks:
         t.coloring = what
 
-def remove_duplicates ( tasks ):
+
+def remove_duplicates(tasks):
     """Remove dublicated tasks"""
     reduced = []
 
     while len(tasks):
         t = tasks.pop(0)
-        if not t in reduced:
-            reduced.append ( t )
+        if t not in reduced:
+            reduced.append(t)
 
     return reduced
-
-##############################################################################################################
-# Cell phone interaction
-
-if hasgammu:
-    class CellPhone ( object ):
-        """A cell phone object that uses gammu to sychnronize the cell phones todo list"""
-        def __init__ ( self ):
-            self.sm = gammu.StateMachine()
-            self.sm.ReadConfig()
-            self.sm.Init()
-            self.tasklist = []
-            self.__read_entries()
-        def __read_entries ( self ):
-            try:
-                todo = self.sm.GetNextToDo ( Start=True )
-            except gammu.ERR_EMPTY:
-                return
-            self.tasklist.append ( self.format_todo ( todo ) )
-            while True:
-                loc = todo["Location"]
-                try:
-                    todo = self.sm.GetNextToDo ( Location=loc )
-                except gammu.ERR_EMPTY:
-                    break
-                self.tasklist.append ( self.format_todo ( todo ) )
-        def format_todo( self, todo ):
-            duedate = None
-            taskmsg = ""
-            for e in todo["Entries"]:
-                if e["Type"] == "TEXT":
-                    taskmsg = e["Value"]
-                elif e["Type"] == "ALARM_DATETIME":
-                    duedate = e["Value"]
-            if todo["Priority"] == None:
-                priority = 0
-            elif todo["Priority"] == "Low":
-                priority = 1
-            elif todo["Priority"] == "Medium":
-                priority = 2
-            elif todo["Priority"] == "High":
-                priority = 3
-
-            taskstr = u"%s +%d " % ( taskmsg, priority )
-            if duedate is not None:
-                taskstr += u"@%s" % (duedate.isoformat().split("T")[0],)
-            return taskstr
-
-        def write_entry ( self, task, when ):
-            if when is None:
-                hour = 12
-            else:
-                hour = int ( when )
-            if not task.due is None:
-                year,month,day = task.due.split("-")
-                entries = [{"Type": "ALARM_DATETIME", "Value": datetime.datetime ( day=int(day), year=int(year), month=int(month), hour=hour )}]
-            else:
-                entries = []
-            entries.append ( {"Type": "TEXT", "Value": "%s :%s" % ( task.task, task.project )} )
-            newentry = {"Priority": "Medium", "Type": "MEMO",
-                    "Entries": entries }
-            self.sm.AddToDo ( newentry )
 
 ###############################################
 # Actions
 ###############################################
 
-def task_add ( cfg, opts, args ):
+
+def task_add(cfg, opts, args):
     """
     Add a task to the todo file.
 
@@ -333,15 +286,16 @@ def task_add ( cfg, opts, args ):
     todo.py add Call Walter +4
             adds a task with message "Call Walter" to the todo file and mark it as priority 4
     """
-    newtask = Task ( " ".join(args[1:]), cfg )
+    newtask = Task(" ".join(args[1:]), cfg)
     if not opts.dry:
-        f = open ( cfg["todofile"], 'a' )
-        f.write ( str(newtask)+"\n" )
+        f = open(cfg["todofile"], 'a')
+        f.write(str(newtask) + "\n")
         f.close()
     elif opts.verbose:
-        outputstream.write ( str ( newtask )+"\n" +"\n" )
+        outputstream.write(str(newtask) + "\n\n")
 
-def task_ls ( cfg, opts, args ):
+
+def task_ls(cfg, opts, args):
     """
     list tasks from the todo file
 
@@ -363,37 +317,38 @@ def task_ls ( cfg, opts, args ):
     """
 
     tasks = []
-    for l in open ( cfg["todofile"] ):
-        tasks.append ( Task ( l, cfg ) )
-    tasks.sort ( compare_by_priority )
+    for l in open(cfg["todofile"]):
+        tasks.append(Task(l, cfg))
+    tasks.sort(compare_by_priority)
     projects = []
     sortby = ""
     for a in args[1:]:
         if a[0] == ":":
-            projects.append ( a[1:] )
+            projects.append(a[1:])
         else:
             sortby = a
-    print "Sortby:",sortby
+    print "Sortby:", sortby
     if sortby == "":
         sortby = cfg["ls_sortby"]
-    if sortby[0] == "d":
-        tasks.sort ( compare_by_date )
-        setcolor ( tasks, 'nocolor' if asciiout else 'date' )
+    elif sortby[0] == "d":
+        tasks.sort(compare_by_date)
+        setcolor(tasks, 'nocolor' if asciiout else 'date')
     elif sortby[:3] == "pri":
-        tasks.sort ( compare_by_priority )
-        setcolor ( tasks, 'nocolor' if asciiout else 'priority' )
+        tasks.sort(compare_by_priority)
+        setcolor(tasks, 'nocolor' if asciiout else 'priority')
     elif sortby[:3] == "pro":
-        tasks.sort ( compare_by_project )
-        setcolor ( tasks, 'nocolor' if asciiout else 'project' )
+        tasks.sort(compare_by_project)
+        setcolor(tasks, 'nocolor' if asciiout else 'project')
     for t in tasks:
-        if len(projects)==0:
-            outputstream.write (  str(t)+"\n" )
+        if len(projects) == 0:
+            outputstream.write(str(t) + "\n")
         elif not opts.exclude and t.project in projects:
-            outputstream.write ( str(t)+"\n" )
-        elif opts.exclude and not t.project in projects:
-            outputstream.write ( str(t)+"\n" )
+            outputstream.write(str(t)+"\n")
+        elif opts.exclude and t.project not in projects:
+            outputstream.write(str(t)+"\n")
 
-def task_done ( cfg, opts, args ):
+
+def task_done(cfg, opts, args):
     """
     remove tasks from todo.txt
 
@@ -403,39 +358,40 @@ def task_done ( cfg, opts, args ):
     that matches the given regular expression. In almost any case, you will have to quote the regular expression.
     """
     tasks = []
-    f = open ( cfg["todofile"] )
+    f = open(cfg["todofile"])
     lines = f.readlines()
     f.close()
     for l in lines:
-        tasks.append ( Task ( l, cfg ) )
+        tasks.append(Task(l, cfg))
     todotasks = []
     donetasks = []
     for t in tasks:
-        if len(args)==1 and check_due(t,cfg["criticaldays"])==2:
-            donetasks.append ( str(t) )
-        elif len(args)==2:
-            if t.match ( " ".join(args[1:]) ):
-                donetasks.append ( str(t) )
+        if len(args) == 1 and check_due(t, cfg["criticaldays"]) == 2:
+            donetasks.append(str(t))
+        elif len(args) == 2:
+            if t.match(" ".join(args[1:])):
+                donetasks.append(str(t))
             else:
-                todotasks.append ( str(t) )
+                todotasks.append(str(t))
         else:
-            todotasks.append ( str(t) )
+            todotasks.append(str(t))
 
     if not opts.dry:
-        f = open ( cfg["todofile"], "w" )
-        f.write ( "\n".join ( todotasks )+"\n" )
+        f = open(cfg["todofile"], "w")
+        f.write("\n".join(todotasks)+"\n")
         f.close()
-        f = open ( cfg["donefile"], "a" )
-        f.write ( "\nDone: %s\n" % datetime.date.today().isoformat() )
-        f.write ( "\n".join ( donetasks )+"\n")
+        f = open(cfg["donefile"], "a")
+        f.write("\nDone: %s\n" % datetime.date.today().isoformat())
+        f.write("\n".join(donetasks) + "\n")
         f.close()
     elif opts.verbose:
-        outputstream.write ( "TODO"+"\n" )
-        outputstream.write ( "\n".join ( todotasks )+"\n"+"\n" )
-        outputstream.write ( "\nDONE" +"\n" )
-        outputstream.write ( "\n".join ( donetasks )+"\n" + "\n" )
+        outputstream.write("TODO"+"\n")
+        outputstream.write("\n".join(todotasks)+"\n\n")
+        outputstream.write("\nDONE" + "\n")
+        outputstream.write("\n".join(donetasks)+"\n\n")
 
-def task_update ( cfg, opts, args ):
+
+def task_update(cfg, opts, args):
     """
     update tasks
 
@@ -446,30 +402,30 @@ def task_update ( cfg, opts, args ):
     """
 
     tasks = []
-    f = open ( cfg["todofile"] )
+    f = open(cfg["todofile"])
     lines = f.readlines()
     f.close()
     for l in lines:
-        tasks.append ( Task ( l, cfg ) )
-    ptrn = r"%s" % ( args[1], )
+        tasks.append(Task(l, cfg))
     for t in tasks:
-        if t.match ( args[1] ):
+        if t.match(args[1]):
             for m in args[2:]:
                 if m[0] == "@":
-                    t.due = parsedue ( m )[0]
+                    t.due = parsedue(m)[0]
                 elif m[0] == ":":
-                    t.project = parseproject ( m )[0]
+                    t.project = parseproject(m)[0]
                 elif m[0] == "+":
-                    t.priority = parsepriority ( m )[0]
-    newtasks = "\n".join ( [ str(t) for t in tasks] ) + "\n"
+                    t.priority = parsepriority(m)[0]
+    newtasks = "\n".join([str(t) for t in tasks]) + "\n"
     if not opts.dry:
-        f = open ( cfg["todofile"], "w" )
-        f.write ( newtasks )
+        f = open(cfg["todofile"], "w")
+        f.write(newtasks)
         f.close()
     elif opts.verbose:
-        outputstream.write ( newtasks +"\n" )
+        outputstream.write(newtasks + "\n")
 
-def task_merge ( cfg, opts, args ):
+
+def task_merge(cfg, opts, args):
     """
     merge a 'todo' file with the default file
 
@@ -479,50 +435,48 @@ def task_merge ( cfg, opts, args ):
     the second file are used that match the regular expression.
     """
     tasks = []
-    f = open ( cfg["todofile"] )
+    f = open(cfg["todofile"])
     lines = f.readlines()
     f.close()
     for l in lines:
-        tasks.append ( l )
-    f = open ( args[1] )
+        tasks.append(l)
+    f = open(args[1])
     lines = f.readlines()
     f.close()
-    if len ( args ) > 2:
-        ptrn = r"%s" % ( args[2] , )
-    else:
-        ptrn = r""
     for l in lines:
-        t = Task ( l, cfg )
-        if t.match ( " ".join ( args[2:] ) ):
-            tasks.append ( str(t) )
+        t = Task(l, cfg)
+        if t.match(" ".join(args[2:])):
+            tasks.append(str(t))
     if not opts.dry:
-        f = open ( cfg["todofile"], "w" )
-        f.write ( "".join(tasks) )
-        f.close ()
+        f = open(cfg["todofile"], "w")
+        f.write("".join(tasks))
+        f.close()
     elif opts.verbose:
-        outputstream.write ( "".join(tasks) +"\n" )
+        outputstream.write("".join(tasks) + "\n")
 
-def task_clean ( cfg, opts, args ):
+
+def task_clean(cfg, opts, args):
     """
     clean a 'todo' file by removing duplicate entries
 
     todo.py clean
 
     """
-    f = open ( cfg["todofile"] )
+    f = open(cfg["todofile"])
     lines = f.readlines()
     f.close()
-    tasks = remove_duplicates ( [ Task ( t, cfg ) for t in lines ] )
-    tasks = "\n".join ( [ str ( t ) for t in tasks ] ) + "\n"
+    tasks = remove_duplicates([Task(t, cfg) for t in lines])
+    tasks = "\n".join([str(t) for t in tasks]) + "\n"
     if not opts.dry:
-        f = open ( cfg["todofile"], "w" )
-        f.write ( tasks )
+        f = open(cfg["todofile"], "w")
+        f.write(tasks)
         f.close()
     elif opts.verbose:
-        outputstream.write ( tasks +"\n" )
+        outputstream.write(tasks + "\n")
+
 
 if hasgammu:
-    def task_sync ( cfg, opts, args ):
+    def task_sync(cfg, opts, args):
         """
         synchronize tasks with a mobile phone
 
@@ -540,181 +494,190 @@ if hasgammu:
         """
         c = CellPhone()
         if args[1] == "get":
-            f = open ( cfg["todofile"] )
-            oldtasks = [ Task ( t, cfg ) for t in f.readlines() ]
+            f = open(cfg["todofile"])
+            oldtasks = [Task(t, cfg) for t in f.readlines()]
             f.close()
-            newtasks = [ Task ( t, cfg ) for t in c.tasklist ]
+            newtasks = [Task(t, cfg) for t in c.tasklist]
 
-            alltasks = remove_duplicates ( oldtasks + newtasks )
-            alltasks = "\n".join ( [ str(t) for t in alltasks ] ) + "\n"
+            alltasks = remove_duplicates(oldtasks + newtasks)
+            alltasks = "\n".join([str(t) for t in alltasks]) + "\n"
 
             if not opts.dry:
-                f = open ( cfg["todofile"], 'a' )
-                f.write ( alltasks )
+                f = open(cfg["todofile"], 'a')
+                f.write(alltasks)
                 f.close()
             elif opts.verbose:
-                outputstream.write ( str ( alltasks ) +"\n" )
+                outputstream.write(str(alltasks) + "\n")
         else:
             # search for tasks that match the given pattern
-            f = open ( cfg["todofile"] )
-            lines = f.readlines ()
-            f.close ()
-            ptrn = r"%s" % ( args[1], )
+            f = open(cfg["todofile"])
+            lines = f.readlines()
+            f.close()
             if len(args) > 2:
                 when = args[2]
             else:
                 when = None
             for l in lines:
-                t = Task ( l, cfg )
-                if t.match ( args[1] ):
-                    c.write_entry ( t, when )
+                t = Task(l, cfg)
+                if t.match(args[1]):
+                    c.write_entry(t, when)
 
 ###############################################
 # Task object
 ###############################################
 
-class Task ( object ):
-    def __init__ ( self, message, cfg ):
+
+class Task(object):
+    def __init__(self, message, cfg):
         """Create a task from a string"""
-        self.task,self.due,self.priority,self.project = parsetask ( message )
+        self.task, self.due, self.priority, self.project = parsetask(message)
         self.__coloring = ""
         self.datecolors = [cfg["duenormal"], cfg["duesoon"], cfg["duetoday"], cfg["dueover"]]
         self.prioritycolors = []
-        for p in xrange ( 10 ):
-            self.prioritycolors.append ( cfg["priority%d" % (p,)] )
+        for p in xrange(10):
+            self.prioritycolors.append(cfg["priority%d" % (p,)])
         self.projectcolors = {}
-        for p,c in cfg["projects"]:
+        for p, c in cfg["projects"]:
             self.projectcolors[p] = c
         self.criticaldays = cfg["criticaldays"]
-    def __str__ ( self ):
+
+    def __str__(self):
         msg = u""
-        if not self.project is None:
+        if self.project is not None:
             msg += " :%s" % (self.project,)
         if len(msg) < 17:
-            msg += " " * ( 17-len(msg) )
-        if not self.priority is None:
+            msg += " " * (17-len(msg))
+        if self.priority is not None:
             msg += " +%d" % (self.priority,)
-        if not self.due is None:
+        if self.due is not None:
             msg += " @%s" % (self.due,)
         else:
-            msg += " "*12
+            msg += " " * 12
         msg += "   " + self.task
-        if self.coloring=="date":
-            msg = "\033[" + self.datecolors[check_due(self,self.criticaldays)] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
-        elif self.coloring=="priority":
-            msg = "\033[" + self.prioritycolors[self.priority] + "m" + msg + "\033[" + ansicolors["reset"] + "m"
-        elif self.coloring=="project":
-            msg = "\033[" + self.projectcolors.setdefault (self.project, ansicolors["reset"]) + "m" + msg + "\033[" + ansicolors["reset"] + "m"
-        elif self.coloring=="nocolor":
+        if self.coloring == "date":
+            msg = "\033[" + self.datecolors[check_due(self, self.criticaldays)] \
+                + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        elif self.coloring == "priority":
+            msg = "\033[" + self.prioritycolors[self.priority] \
+                + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        elif self.coloring == "project":
+            msg = "\033[" + self.projectcolors.setdefault(self.project, ansicolors["reset"]) \
+                + "m" + msg + "\033[" + ansicolors["reset"] + "m"
+        elif self.coloring == "nocolor":
             pass
         try:
-            msg = msg.encode( "utf-8" )
+            msg = msg.encode("utf-8")
         except UnicodeEncodeError:
             pass
         return msg
-    def match ( self, regexp, project=None ):
+
+    def match(self, regexp, project=None):
         """Does this task match a regular expression?"""
         if project is None:
-            project,regexp = parseproject ( regexp )
-        ptrn = r"%s" % ( regexp, )
-        mtask = re.search ( ptrn.strip(), self.task ) is not None
+            project, regexp = parseproject(regexp)
+        ptrn = r"%s" % (regexp,)
+        mtask = re.search(ptrn.strip(), self.task) is not None
         if project is None:
             mproject = True
         else:
             if self.project is None:
                 mproject = project is None
             else:
-                mproject = re.search ( r"%s" % (project), self.project ) is not None
+                mproject = re.search(r"%s" % (project), self.project) is not None
         return mtask and mproject
-    def __eq__ ( self, other ):
-        """Check wether two tasks are equal"""
-        return self.task==other.task\
-                and self.due==other.due \
-                and self.priority==other.priority \
-                and self.project==other.project
 
-    def setcolor ( self, c ):
+    def __eq__(self, other):
+        """Check wether two tasks are equal"""
+        return self.task == other.task\
+            and self.due == other.due \
+            and self.priority == other.priority \
+            and self.project == other.project
+
+    def setcolor(self, c):
         if not self.__coloring == "nocolor":
             self.__coloring = c
-    def getcolor ( self ):
+
+    def getcolor(self):
         return self.__coloring
-    coloring = property ( fget=getcolor, fset=setcolor )
+
+    coloring = property(fget=getcolor, fset=setcolor)
 
 if __name__ == "__main__":
     from optparse import OptionParser
     from ConfigParser import SafeConfigParser
-    parser = OptionParser ( usage=helptext, description=descriptiontext )
+    parser = OptionParser(usage=helptext, description=descriptiontext)
 
-    parser.add_option ( "-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
-            default=os.path.expanduser ( os.path.join ( "~",".config","todo","config" ) ) )
-    parser.add_option ( "-d", "--dry", help="'dry run', i.e. all operations are performed but no files are actually written",
-            action="store_true" )
-    parser.add_option ( "-v", "--verbose", help="print status messages on try runs",
-            action="store_true" )
-    parser.add_option ( "-l", "--license", help="show license information and exit", action="store_true" )
-    parser.add_option ( "-x", "--exclude", help="Interpret project specifications as exclusions", action="store_true" )
+    parser.add_option("-c", "--cfg", help="use config file other than the default ~/.config/todo/config",
+                      default=os.path.expanduser(os.path.join("~", ".config", "todo", "config")))
+    parser.add_option("-d", "--dry",
+                      help="'dry run', i.e. all operations are performed but no files are actually written",
+                      action="store_true")
+    parser.add_option("-v", "--verbose", help="print status messages on try runs",
+                      action="store_true")
+    parser.add_option("-l", "--license", help="show license information and exit", action="store_true")
+    parser.add_option("-x", "--exclude", help="Interpret project specifications as exclusions", action="store_true")
 
     opts, args = parser.parse_args()
 
     if opts.license:
-        outputstream.write ( licensetext +"\n" )
-        sys.exit ()
+        outputstream.write(licensetext + "\n")
+        sys.exit()
 
-    cfgparser = SafeConfigParser ( )
-    cfgparser.add_section ( "config" )
-    cfgparser.add_section ( "due" )
-    cfgparser.add_section ( "priority" )
-    cfgparser.add_section ( "projects" )
-    cfgparser.add_section ( "task:ls" )
-    cfgparser.set ( "config", "todofile", "os.path.expanduser ( os.path.join ( '~', 'todo.txt' ) )" )
-    cfgparser.set ( "config", "donefile", "os.path.expanduser ( os.path.join ( '~', 'done.txt' ) )" )
-    cfgparser.set ( "config", "criticaldays", "2" )
-    cfgparser.set ( "due", "normal", 'reset' )
-    cfgparser.set ( "due", "soon",  'reset+";"+yellowfg' )
-    cfgparser.set ( "due", "today", 'reset+";"+redfg' )
-    cfgparser.set ( "due", "over",  'reset+";"+redfg+";"+bold' )
-    cfgparser.set ( "priority", "p0", 'reset' )
-    cfgparser.set ( "priority", "p1", 'reset+";"+bold' )
-    cfgparser.set ( "priority", "p2", 'reset+";"+cyanfg' )
-    cfgparser.set ( "priority", "p3", 'reset+";"+cyanfg+";"+bold' )
-    cfgparser.set ( "priority", "p4", 'reset+";"+magentafg' )
-    cfgparser.set ( "priority", "p5", 'reset+";"+magentafg+";"+bold' )
-    cfgparser.set ( "priority", "p6", 'reset+";"+yellowfg' )
-    cfgparser.set ( "priority", "p7", 'reset+";"+yellowfg+";"+bold' )
-    cfgparser.set ( "priority", "p8", 'reset+";"+redfg' )
-    cfgparser.set ( "priority", "p9", 'reset+";"+redfg+";"+bold' )
-    cfgparser.set ( "task:ls",  "sortby", "" )
+    cfgparser = SafeConfigParser()
+    cfgparser.add_section("config")
+    cfgparser.add_section("due")
+    cfgparser.add_section("priority")
+    cfgparser.add_section("projects")
+    cfgparser.add_section("task:ls")
+    cfgparser.set("config", "todofile", "os.path.expanduser ( os.path.join ( '~', 'todo.txt' ) )")
+    cfgparser.set("config", "donefile", "os.path.expanduser ( os.path.join ( '~', 'done.txt' ) )")
+    cfgparser.set("config", "criticaldays", "2")
+    cfgparser.set("due", "normal", 'reset')
+    cfgparser.set("due", "soon",  'reset+";"+yellowfg')
+    cfgparser.set("due", "today", 'reset+";"+redfg')
+    cfgparser.set("due", "over",  'reset+";"+redfg+";"+bold')
+    cfgparser.set("priority", "p0", 'reset')
+    cfgparser.set("priority", "p1", 'reset+";"+bold')
+    cfgparser.set("priority", "p2", 'reset+";"+cyanfg')
+    cfgparser.set("priority", "p3", 'reset+";"+cyanfg+";"+bold')
+    cfgparser.set("priority", "p4", 'reset+";"+magentafg')
+    cfgparser.set("priority", "p5", 'reset+";"+magentafg+";"+bold')
+    cfgparser.set("priority", "p6", 'reset+";"+yellowfg')
+    cfgparser.set("priority", "p7", 'reset+";"+yellowfg+";"+bold')
+    cfgparser.set("priority", "p8", 'reset+";"+redfg')
+    cfgparser.set("priority", "p9", 'reset+";"+redfg+";"+bold')
+    cfgparser.set("task:ls",  "sortby", "")
 
-    cfgparser.read ( opts.cfg )
+    cfgparser.read(opts.cfg)
 
     config = {
-            "todofile":  eval ( cfgparser.get ( "config", "todofile" ) ),
-            "donefile":  eval ( cfgparser.get ( "config", "donefile" ) ),
-            "criticaldays": cfgparser.getint ( "config", "criticaldays"),
-            "duenormal": eval ( cfgparser.get ( "due", "normal" ), ansicolors ),
-            "duesoon":   eval ( cfgparser.get ( "due", "soon" ),   ansicolors ),
-            "duetoday":  eval ( cfgparser.get ( "due", "today" ),  ansicolors ),
-            "dueover":   eval ( cfgparser.get ( "due", "over" ),   ansicolors ),
-            "priority0": eval ( cfgparser.get ( "priority", "p0" ), ansicolors ),
-            "priority1": eval ( cfgparser.get ( "priority", "p1" ), ansicolors ),
-            "priority2": eval ( cfgparser.get ( "priority", "p2" ), ansicolors ),
-            "priority3": eval ( cfgparser.get ( "priority", "p3" ), ansicolors ),
-            "priority4": eval ( cfgparser.get ( "priority", "p4" ), ansicolors ),
-            "priority5": eval ( cfgparser.get ( "priority", "p5" ), ansicolors ),
-            "priority6": eval ( cfgparser.get ( "priority", "p6" ), ansicolors ),
-            "priority7": eval ( cfgparser.get ( "priority", "p7" ), ansicolors ),
-            "priority8": eval ( cfgparser.get ( "priority", "p8" ), ansicolors ),
-            "priority9": eval ( cfgparser.get ( "priority", "p9" ), ansicolors ),
-            "ls_sortby":  cfgparser.get ( "task:ls", "sortby" ),
+            "todofile": eval(cfgparser.get("config", "todofile")),
+            "donefile": eval(cfgparser.get("config", "donefile")),
+            "criticaldays": cfgparser.getint("config", "criticaldays"),
+            "duenormal": eval(cfgparser.get("due", "normal"), ansicolors),
+            "duesoon": eval(cfgparser.get("due", "soon"),   ansicolors),
+            "duetoday": eval(cfgparser.get("due", "today"),  ansicolors),
+            "dueover": eval(cfgparser.get("due", "over"),   ansicolors),
+            "priority0": eval(cfgparser.get("priority", "p0"), ansicolors),
+            "priority1": eval(cfgparser.get("priority", "p1"), ansicolors),
+            "priority2": eval(cfgparser.get("priority", "p2"), ansicolors),
+            "priority3": eval(cfgparser.get("priority", "p3"), ansicolors),
+            "priority4": eval(cfgparser.get("priority", "p4"), ansicolors),
+            "priority5": eval(cfgparser.get("priority", "p5"), ansicolors),
+            "priority6": eval(cfgparser.get("priority", "p6"), ansicolors),
+            "priority7": eval(cfgparser.get("priority", "p7"), ansicolors),
+            "priority8": eval(cfgparser.get("priority", "p8"), ansicolors),
+            "priority9": eval(cfgparser.get("priority", "p9"), ansicolors),
+            "ls_sortby": cfgparser.get("task:ls", "sortby"),
             "projects": []
             }
-    for o in cfgparser.options ( "projects" ):
-        config["projects"].append ( ( o, eval ( cfgparser.get ( "projects", o ), ansicolors ) ) )
+    for o in cfgparser.options("projects"):
+        config["projects"].append((o, eval(cfgparser.get("projects", o), ansicolors)))
 
     if args[0][0] == "h":
-        if len(args)==1:
+        if len(args) == 1:
             parser.print_help()
         else:
-            outputstream.write ( eval ( "task_%s" % ( args[1], ) ).__doc__ + "\n" )
+            outputstream.write(eval("task_%s" % (args[1],)).__doc__ + "\n")
     else:
-        eval ( "task_%s" % ( args[0], ) )(config,opts,args)
+        eval("task_%s" % (args[0],))(config, opts, args)
